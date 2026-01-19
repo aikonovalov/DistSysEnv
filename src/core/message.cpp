@@ -3,7 +3,7 @@
 
 namespace distsysenv::core {
 
-static constexpr char kDEFAULT_FILLER = ' ';
+static constexpr char kDEFAULT_FILLER = '\0';
 
 Message::Message(std::string&& type, Bytes&& payload) : type_(std::move(type)), payload_(std::move(payload)) {}
 
