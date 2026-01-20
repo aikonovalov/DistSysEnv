@@ -1,7 +1,7 @@
 #include "message.h"
 #include <cstring>
 
-namespace distsysenv::core {
+namespace distsysenv {
 
 static constexpr char kDEFAULT_FILLER = '\0';
 
@@ -68,4 +68,4 @@ Message Message::FromBytes(const Bytes& serialized_message) {
     return FromDescription(std::move(type), std::move(payload));
 }
 
-} // namespace distsysenv::core
+} // namespace distsysenv

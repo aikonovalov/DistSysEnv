@@ -2,7 +2,7 @@
 
 #include "utils.h"
 
-namespace distsysenv::core {
+namespace distsysenv {
 
 using MessageType = std::string;
 
@@ -28,4 +28,4 @@ private:
     Bytes payload_;
 };
 
-} // namespace distsysenv::core
+} // namespace distsysenv
