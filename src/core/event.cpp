@@ -2,7 +2,7 @@
 
 namespace distsysenv {
 
-Event::Event(EEventType type, SimulationClock timestamp, EventPayload payload) : type(type), timestamp(timestamp), payload(payload) {}
+Event::Event(EEventType type, SimulationClock timestamp, EventPayload payload) : type_(type), timestamp_(timestamp), payload_(payload) {}
 
 Event Event::MessageSend(SimulationClock at, NodeId from, NodeId to, Message msg) {
     return Event(EEventType::kMESSAGE_SEND, at, MessageSendPayload{from, to, std::move(msg)});
@@ -20,12 +20,20 @@ Event Event::NodeRecover(SimulationClock at, NodeId node) {
     return Event(EEventType::kNODE_RECOVER, at, NodeRecoverPayload{node});
 }
 
-SimulationClock Event::GetTimestamp() const {
-    return timestamp;
+const EEventType& Event::GetType() const {
+    return type_;
+}
+
+const SimulationClock& Event::GetTimestamp() const {
+    return timestamp_;
+}
+
+const EventPayload& Event::GetPayload() const {
+    return payload_;
 }
 
 bool EventEarlier::operator()(const Event& a, const Event& b) const {
-    return std::tie(a.timestamp, a.type) > std::tie(b.timestamp, b.type);
+    return std::tie(a.GetTimestamp(), a.GetType()) > std::tie(b.GetTimestamp(), b.GetType());
 }
 
 }

@@ -38,11 +38,8 @@ struct NodeRecoverPayload {
 
 using EventPayload = std::variant<MessageSendPayload, MessageReceivePayload, NodeFailPayload, NodeRecoverPayload>;
 
-struct EventEarlier;
 
 class Event {
-    friend EventEarlier;
-
     Event(EEventType type, SimulationClock timestamp, EventPayload payload);
 
 public:
@@ -54,12 +51,16 @@ public:
 
     static Event NodeRecover(SimulationClock at, NodeId node);
 
-    SimulationClock GetTimestamp() const;
+    const EEventType& GetType() const;
+
+    const SimulationClock& GetTimestamp() const;
+
+    const EventPayload& GetPayload() const;
 
 private:
-    EEventType type;
-    SimulationClock timestamp;
-    EventPayload payload;
+    EEventType type_;
+    SimulationClock timestamp_;
+    EventPayload payload_;
 
 };
 
