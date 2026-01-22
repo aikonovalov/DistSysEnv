@@ -68,4 +68,12 @@ Message Message::FromBytes(const Bytes& serialized_message) {
     return FromDescription(std::move(type), std::move(payload));
 }
 
+const std::string& Message::GetType() const {
+    return type_;
+}
+
+const Bytes& Message::GetPayload() const {
+    return payload_;
+}
+
 } // namespace distsysenv
