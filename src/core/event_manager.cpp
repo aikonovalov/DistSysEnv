@@ -41,8 +41,6 @@ void EventManager::ProcessUntil(SimulationClock until, const std::function<void(
         }
 
         handler(*event);
-
-        event = GetNext();
     }
 }
 

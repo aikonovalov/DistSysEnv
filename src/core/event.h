@@ -2,7 +2,7 @@
 
 #include "../utils/utils.h"
 #include "../utils/message.h"
-#include "../sim/node_id.h"
+#include "../utils/node_id.h"
 
 #include <tuple>
 #include <variant>
@@ -17,23 +17,23 @@ enum class EEventType {
 };
 
 struct MessageSendPayload {
-    NodeId from;
-    NodeId to;
+    NodeID from;
+    NodeID to;
     Message msg;
 };
 
 struct MessageReceivePayload {
-    NodeId from;
-    NodeId to;
+    NodeID from;
+    NodeID to;
     Message msg;
 };
 
 struct NodeFailPayload {
-    NodeId node;
+    NodeID node;
 };
 
 struct NodeRecoverPayload {
-    NodeId node;
+    NodeID node;
 };
 
 using EventPayload = std::variant<MessageSendPayload, MessageReceivePayload, NodeFailPayload, NodeRecoverPayload>;
@@ -43,13 +43,13 @@ class Event {
     Event(EEventType type, SimulationClock timestamp, EventPayload payload);
 
 public:
-    static Event MessageSend(SimulationClock at, NodeId from, NodeId to, Message msg);
+    static Event MessageSend(SimulationClock at, NodeID from, NodeID to, Message msg);
 
-    static Event MessageReceive(SimulationClock at, NodeId from, NodeId to, const Message& msg);
+    static Event MessageReceive(SimulationClock at, NodeID from, NodeID to, const Message& msg);
 
-    static Event NodeFail(SimulationClock at, NodeId node);
+    static Event NodeFail(SimulationClock at, NodeID node);
 
-    static Event NodeRecover(SimulationClock at, NodeId node);
+    static Event NodeRecover(SimulationClock at, NodeID node);
 
     const EEventType& GetType() const;
 
