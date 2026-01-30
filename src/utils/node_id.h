@@ -4,21 +4,16 @@
 
 namespace distsysenv {
 
-struct NodeID {
-private:
-    friend class Simulator;
-
-    using Index = uint32_t;
-    using Generation = uint32_t;
-
-    NodeID(Index index, Generation generation);
-
+class NodeID {
 public:
+    enum class Index : int32_t;
+    enum class Generation : int32_t;
+
     NodeID() = delete;
 
-    Index IndexValue() const;
+    Index GetIndex() const;
 
-    Generation GenerationValue() const;
+    Generation GetGeneration() const;
 
     friend bool operator==(const NodeID& a, const NodeID& b);
     
@@ -27,6 +22,10 @@ public:
     friend bool operator<(const NodeID& a, const NodeID& b);
 
 private:
+    friend class NodeIDManager;
+
+    NodeID(Index index, Generation generation);
+
     Index index_;
     Generation generation_;
 };
