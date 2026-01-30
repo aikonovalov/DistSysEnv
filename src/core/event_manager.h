@@ -14,10 +14,7 @@ class EventManager {
 public:
     SimulationClock Now() const;
 
-    template <typename... Args>
-    void Schedule(Args&&... args) {
-        queue_.emplace(std::forward<Args>(args)...);
-    }
+    void Schedule(Event event);
 
     std::optional<Event> GetNext();
 

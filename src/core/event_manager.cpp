@@ -8,6 +8,10 @@ SimulationClock EventManager::Now() const {
     return now_;
 }
 
+void EventManager::Schedule(Event event) {
+    queue_.push(std::move(event));
+}
+
 std::optional<Event> EventManager::GetNext() {
     if (queue_.empty()) {
         return std::nullopt;
