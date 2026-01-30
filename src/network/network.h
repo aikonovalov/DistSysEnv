@@ -21,12 +21,12 @@ class Network {
 
   void OnEvent(const Event& event);
 
-  void OnSendRequest(NodeID from, NodeID to, Message msg);
+  void OnSendRequest(NodeID from_id, NodeID to_id, Message msg);
 
  private:
   void HandleMessageReceive(const Event& event);
-  bool ShouldDrop(NodeID from, NodeID to);
-  SimulationClock RandomDelay(NodeID from, NodeID to);
+  bool ShouldDrop(NodeID from_id, NodeID to_id);
+  SimulationClock RandomDelay(NodeID from_id, NodeID to_id);
 
   EventManager& event_manager_;  // TODO: replace with observer pattern
   NodePool& node_pool_;          // TODO: replace with observer pattern

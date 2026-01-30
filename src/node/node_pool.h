@@ -10,12 +10,12 @@
 
 namespace distsysenv {
 
-using DeliveryFunction = std::function<void(NodeID from, const Message&)>;
+using DeliveryFunction = std::function<void(NodeID from_id, const Message&)>;
 
 using NodeFactory = std::function<DeliveryFunction(Mailbox mailbox)>;
 
 using SendRequestObserver =
-    std::function<void(NodeID from, NodeID to, Message msg)>;
+    std::function<void(NodeID from_id, NodeID to_id, Message msg)>;
 
 class NodePool {
  public:
