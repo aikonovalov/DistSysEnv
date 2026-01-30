@@ -13,10 +13,9 @@ NodeID::Generation NodeID::GetGeneration() const {
 }
 
 NodeID::Hash NodeID::GetHash() const {
-    uint32_t uindex = static_cast<uint32_t>(static_cast<int32_t>(index_));
-    uint32_t ugen = static_cast<uint32_t>(static_cast<int32_t>(generation_));
-
-    return Hash{static_cast<uint64_t>(uindex) << 32u | ugen};
+    uint32_t index = static_cast<uint32_t>(static_cast<int32_t>(index_));
+    uint32_t generation = static_cast<uint32_t>(static_cast<int32_t>(generation_));
+    return Hash{static_cast<uint64_t>(index) << 32u | generation};
 }
 
 bool operator==(const NodeID& a, const NodeID& b) {
