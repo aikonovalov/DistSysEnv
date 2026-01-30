@@ -9,7 +9,8 @@ NodeID NodeIDManager::Generate() {
         index = free_indices_.front();
         free_indices_.pop();
     } else {
-        index = Index(static_cast<int32_t>(next_index_) + 1);
+        index = next_index_;
+        next_index_ = Index(static_cast<int32_t>(next_index_) + 1);
     }
 
     Generation generation{1};

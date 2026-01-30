@@ -12,6 +12,13 @@ NodeID::Generation NodeID::GetGeneration() const {
     return generation_;
 }
 
+NodeID::Hash NodeID::GetHash() const {
+    uint32_t uindex = static_cast<uint32_t>(static_cast<int32_t>(index_));
+    uint32_t ugen = static_cast<uint32_t>(static_cast<int32_t>(generation_));
+
+    return Hash{static_cast<uint64_t>(uindex) << 32u | ugen};
+}
+
 bool operator==(const NodeID& a, const NodeID& b) {
     return (a.GetIndex() == b.GetIndex()) && (a.GetGeneration() == b.GetGeneration());
 }
