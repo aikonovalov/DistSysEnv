@@ -10,4 +10,4 @@ using Bytes = std::vector<Byte>;
 
 using SimulationClock = uint64_t;
 
-}
+}  // namespace distsysenv
