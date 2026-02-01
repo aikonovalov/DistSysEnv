@@ -18,6 +18,8 @@ Network::Network(EventManager& event_manager, NodePool& node_pool,
 void Network::OnEvent(const Event& event) {
   if (event.GetType() == EEventType::kMESSAGE_RECEIVE) {
     HandleMessageReceive(event);
+  } else if (event.GetType() == EEventType::kTIMER) {
+    HandleTimer(event);
   }
 }
 
@@ -25,6 +27,11 @@ void Network::HandleMessageReceive(const Event& event) {
   const MessageReceivePayload& payload =
       std::get<MessageReceivePayload>(event.GetPayload());
   node_pool_.Deliver(payload.from_id, payload.to_id, payload.msg);
+}
+
+void Network::HandleTimer(const Event& event) {
+  const TimerPayload& payload = std::get<TimerPayload>(event.GetPayload());
+  node_pool_.DeliverTimer(payload.node_id, payload.timer_name);
 }
 
 void Network::OnSendRequest(NodeID from_id, NodeID to_id, Message msg) {

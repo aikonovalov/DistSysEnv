@@ -25,6 +25,7 @@ class Network {
 
  private:
   void HandleMessageReceive(const Event& event);
+  void HandleTimer(const Event& event);
   bool ShouldDrop(NodeID from_id, NodeID to_id);
   SimulationClock RandomDelay(NodeID from_id, NodeID to_id);
 

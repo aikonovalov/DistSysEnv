@@ -4,6 +4,7 @@
 #include "../utils/node_id.h"
 #include "../utils/utils.h"
 
+#include <string>
 #include <tuple>
 #include <variant>
 
@@ -12,6 +13,7 @@ namespace distsysenv {
 enum class EEventType {
   kMESSAGE_SEND,
   kMESSAGE_RECEIVE,
+  kTIMER,
   kNODE_FAIL,
   kNODE_RECOVER
 };
@@ -28,6 +30,11 @@ struct MessageReceivePayload {
   Message msg;
 };
 
+struct TimerPayload {
+  NodeID node_id;
+  std::string timer_name;
+};
+
 struct NodeFailPayload {
   NodeID node_id;
 };
@@ -37,7 +44,8 @@ struct NodeRecoverPayload {
 };
 
 using EventPayload = std::variant<MessageSendPayload, MessageReceivePayload,
-                                  NodeFailPayload, NodeRecoverPayload>;
+                                  TimerPayload, NodeFailPayload,
+                                  NodeRecoverPayload>;
 
 class Event {
   Event(EEventType type, SimulationClock timestamp, EventPayload payload);
@@ -48,6 +56,9 @@ class Event {
 
   static Event MessageReceive(SimulationClock at, NodeID from_id, NodeID to_id,
                               const Message& msg);
+
+  static Event Timer(SimulationClock at, NodeID node_id,
+                     const std::string& timer_name);
 
   static Event NodeFail(SimulationClock at, NodeID node_id);
 
