@@ -10,6 +10,7 @@ const HandlerMap& DefaultHandlers() {
 
     handler_map[EEventType::kMESSAGE_SEND] = [](const Event& e) {
       const auto& p = std::get<MessageSendPayload>(e.GetPayload());
+
       std::cout << "[" << e.GetTimestamp() << "] "
                 << static_cast<int>(p.from_id.GetIndex()) << " ---> "
                 << static_cast<int>(p.to_id.GetIndex()) << " type=\""
@@ -18,6 +19,7 @@ const HandlerMap& DefaultHandlers() {
 
     handler_map[EEventType::kMESSAGE_RECEIVE] = [](const Event& e) {
       const auto& p = std::get<MessageReceivePayload>(e.GetPayload());
+
       std::cout << "[" << e.GetTimestamp() << "] "
                 << static_cast<int>(p.to_id.GetIndex()) << " <--- "
                 << static_cast<int>(p.from_id.GetIndex()) << " type=\""
@@ -26,6 +28,7 @@ const HandlerMap& DefaultHandlers() {
 
     handler_map[EEventType::kMESSAGE_DROPPED] = [](const Event& e) {
       const auto& p = std::get<MessageDroppedPayload>(e.GetPayload());
+
       std::cout << "[" << e.GetTimestamp() << "] "
                 << static_cast<int>(p.to_id.GetIndex()) << " X--- "
                 << static_cast<int>(p.from_id.GetIndex()) << " type=\""
@@ -34,13 +37,13 @@ const HandlerMap& DefaultHandlers() {
 
     handler_map[EEventType::kTIMER] = [](const Event& e) {
       const auto& p = std::get<TimerPayload>(e.GetPayload());
+
       std::cout << "[" << e.GetTimestamp() << "] Timer fired on id"
                 << static_cast<int>(p.node_id.GetIndex()) << " name=\""
                 << p.timer_name << "\"\n";
     };
 
     return handler_map;
-    
   }();
 
   return kDefaultHandlers;

@@ -1,8 +1,8 @@
 #include "echo_node.h"
 
+#include <string>
 #include "../src/utils/message.h"
 #include "../src/utils/node_id.h"
-#include <string>
 
 namespace distsysenv {
 

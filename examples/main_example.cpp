@@ -16,7 +16,7 @@ static NodeFactory MakeEchoNodeFactory() {
   return [](Mailbox mailbox, TimerManager timer_manager) -> NodeFactoryResult {
     auto node = std::make_shared<EchoNode>(std::move(mailbox),
                                            std::move(timer_manager));
-    
+
     DeliveryFunction deliver = [node](NodeID from_id, const Message& msg) {
       node->OnMessage(from_id, msg);
     };
@@ -58,6 +58,6 @@ void RunExample() {
 
 int main() {
   distsysenv::RunExample();
-  
+
   return 0;
 }
