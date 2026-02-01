@@ -6,18 +6,25 @@
 
 namespace distsysenv {
 
+using EventHandler = std::function<void(const Event&)>;
+using HandlerMap = std::unordered_map<EEventType, EventHandler>;
+
+// Статическая мапа дефолтных обработчиков (один раз инициализируется при первом вызове).
+const HandlerMap& DefaultHandlers();
+
 class Logger {
  public:
-  Logger() = default;
+  static Logger Empty();
+  static Logger WithDefaultHandlers();
 
-  void RegisterHandler(EEventType event_type,
-                       std::function<void(const Event&)>&& handler);
+  void RegisterHandler(EEventType event_type, EventHandler handler);
 
   void operator()(const Event& event);
 
  private:
-  std::unordered_map<EEventType, std::function<void(const Event&)>>
-      event_handlers_;
+  Logger() = default;
+
+  std::unordered_map<EEventType, EventHandler> event_handlers_;
 };
 
 }  // namespace distsysenv

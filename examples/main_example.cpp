@@ -37,38 +37,7 @@ void RunExample() {
       NetworkSettings{.drop_chance = 0.0f, .min_delay = 1, .max_delay = 5},
       RandomSeed{42});
 
-  Logger logger;
-
-  logger.RegisterHandler(EEventType::kMESSAGE_SEND, [](const Event& e) {
-    const auto& p = std::get<MessageSendPayload>(e.GetPayload());
-    std::cout << "[" << e.GetTimestamp() << "] "
-              << static_cast<int>(p.from_id.GetIndex()) << " ---> "
-              << static_cast<int>(p.to_id.GetIndex()) << " type=\""
-              << p.msg.GetType() << "\"\n";
-  });
-
-  logger.RegisterHandler(EEventType::kMESSAGE_RECEIVE, [](const Event& e) {
-    const auto& p = std::get<MessageReceivePayload>(e.GetPayload());
-    std::cout << "[" << e.GetTimestamp() << "] "
-              << static_cast<int>(p.to_id.GetIndex()) << " <--- "
-              << static_cast<int>(p.from_id.GetIndex()) << " type=\""
-              << p.msg.GetType() << "\"\n";
-  });
-
-  logger.RegisterHandler(EEventType::kMESSAGE_DROPPED, [](const Event& e) {
-    const auto& p = std::get<MessageDroppedPayload>(e.GetPayload());
-    std::cout << "[" << e.GetTimestamp() << "] "
-              << static_cast<int>(p.to_id.GetIndex()) << " X--- "
-              << static_cast<int>(p.from_id.GetIndex()) << " type=\""
-              << p.msg.GetType() << "\"\n";
-  });
-
-  logger.RegisterHandler(EEventType::kTIMER, [](const Event& e) {
-    const auto& p = std::get<TimerPayload>(e.GetPayload());
-    std::cout << "[" << e.GetTimestamp() << "] Timer fired on id"
-              << static_cast<int>(p.node_id.GetIndex()) << " name=\""
-              << p.timer_name << "\"\n";
-  });
+  Logger logger = Logger::WithDefaultHandlers();
 
   NodeID a = pool.CreateNode(MakeEchoNodeFactory());
   NodeID b = pool.CreateNode(MakeEchoNodeFactory());

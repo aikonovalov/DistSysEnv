@@ -1,16 +1,70 @@
 #include "logger.h"
 
+#include <iostream>
+
 namespace distsysenv {
 
-void Logger::RegisterHandler(EEventType event_type,
-                             std::function<void(const Event&)>&& handler) {
+const HandlerMap& DefaultHandlers() {
+  static const HandlerMap kDefaultHandlers = []() {
+    HandlerMap handler_map;
+
+    handler_map[EEventType::kMESSAGE_SEND] = [](const Event& e) {
+      const auto& p = std::get<MessageSendPayload>(e.GetPayload());
+      std::cout << "[" << e.GetTimestamp() << "] "
+                << static_cast<int>(p.from_id.GetIndex()) << " ---> "
+                << static_cast<int>(p.to_id.GetIndex()) << " type=\""
+                << p.msg.GetType() << "\"\n";
+    };
+
+    handler_map[EEventType::kMESSAGE_RECEIVE] = [](const Event& e) {
+      const auto& p = std::get<MessageReceivePayload>(e.GetPayload());
+      std::cout << "[" << e.GetTimestamp() << "] "
+                << static_cast<int>(p.to_id.GetIndex()) << " <--- "
+                << static_cast<int>(p.from_id.GetIndex()) << " type=\""
+                << p.msg.GetType() << "\"\n";
+    };
+
+    handler_map[EEventType::kMESSAGE_DROPPED] = [](const Event& e) {
+      const auto& p = std::get<MessageDroppedPayload>(e.GetPayload());
+      std::cout << "[" << e.GetTimestamp() << "] "
+                << static_cast<int>(p.to_id.GetIndex()) << " X--- "
+                << static_cast<int>(p.from_id.GetIndex()) << " type=\""
+                << p.msg.GetType() << "\"\n";
+    };
+
+    handler_map[EEventType::kTIMER] = [](const Event& e) {
+      const auto& p = std::get<TimerPayload>(e.GetPayload());
+      std::cout << "[" << e.GetTimestamp() << "] Timer fired on id"
+                << static_cast<int>(p.node_id.GetIndex()) << " name=\""
+                << p.timer_name << "\"\n";
+    };
+
+    return handler_map;
+  }();
+
+  return kDefaultHandlers;
+}
+
+Logger Logger::Empty() {
+  return Logger();
+}
+
+Logger Logger::WithDefaultHandlers() {
+  Logger l;
+
+  for (const auto& [type, handler] : DefaultHandlers()) {
+    l.RegisterHandler(type, handler);
+  }
+  
+  return l;
+}
+
+void Logger::RegisterHandler(EEventType event_type, EventHandler handler) {
   event_handlers_[event_type] = std::move(handler);
 }
 
 void Logger::operator()(const Event& event) {
-  EEventType curr_event_type = event.GetType();
-
-  auto it = event_handlers_.find(curr_event_type);
+  auto it = event_handlers_.find(event.GetType());
 
   if (it == event_handlers_.end()) {
     return;
