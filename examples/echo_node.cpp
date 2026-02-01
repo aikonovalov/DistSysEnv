@@ -2,7 +2,6 @@
 
 #include "../src/utils/message.h"
 #include "../src/utils/node_id.h"
-#include <iostream>
 #include <string>
 
 namespace distsysenv {
