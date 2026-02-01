@@ -17,8 +17,8 @@ using DeliveryFunction = std::function<void(NodeID from_id, const Message&)>;
 using TimerDeliveryFunction = std::function<void(const std::string&)>;
 
 using NodeFactoryResult = std::pair<DeliveryFunction, TimerDeliveryFunction>;
-using NodeFactory =
-    std::function<NodeFactoryResult(Mailbox mailbox, TimerManager timer_manager)>;
+using NodeFactory = std::function<NodeFactoryResult(
+    Mailbox mailbox, TimerManager timer_manager)>;
 
 using SendRequestObserver =
     std::function<void(NodeID from_id, NodeID to_id, Message msg)>;

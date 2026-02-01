@@ -36,16 +36,20 @@ void Network::HandleTimer(const Event& event) {
 
 void Network::OnSendRequest(NodeID from_id, NodeID to_id, Message msg) {
   SimulationClock now = event_manager_.Now();
-  Message msg_for_receive = msg;
+
+  event_manager_.Schedule(
+      Event::MessageSend(now, from_id, to_id, Message(msg)));
 
   if (ShouldDrop(from_id, to_id)) {
+    event_manager_.Schedule(
+        Event::MessageDropped(now, from_id, to_id, std::move(msg)));
     return;
   }
 
   SimulationClock delay = RandomDelay(from_id, to_id);
   SimulationClock delivery_time = now + delay;
   event_manager_.Schedule(
-      Event::MessageReceive(delivery_time, from_id, to_id, msg_for_receive));
+      Event::MessageReceive(delivery_time, from_id, to_id, std::move(msg)));
 }
 
 bool Network::ShouldDrop(NodeID from_id, NodeID to_id) {

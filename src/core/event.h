@@ -13,6 +13,7 @@ namespace distsysenv {
 enum class EEventType {
   kMESSAGE_SEND,
   kMESSAGE_RECEIVE,
+  kMESSAGE_DROPPED,
   kTIMER,
   kNODE_FAIL,
   kNODE_RECOVER
@@ -25,6 +26,12 @@ struct MessageSendPayload {
 };
 
 struct MessageReceivePayload {
+  NodeID from_id;
+  NodeID to_id;
+  Message msg;
+};
+
+struct MessageDroppedPayload {
   NodeID from_id;
   NodeID to_id;
   Message msg;
@@ -44,8 +51,8 @@ struct NodeRecoverPayload {
 };
 
 using EventPayload = std::variant<MessageSendPayload, MessageReceivePayload,
-                                  TimerPayload, NodeFailPayload,
-                                  NodeRecoverPayload>;
+                                  MessageDroppedPayload, TimerPayload,
+                                  NodeFailPayload, NodeRecoverPayload>;
 
 class Event {
   Event(EEventType type, SimulationClock timestamp, EventPayload payload);
@@ -55,6 +62,9 @@ class Event {
                            Message msg);
 
   static Event MessageReceive(SimulationClock at, NodeID from_id, NodeID to_id,
+                              const Message& msg);
+
+  static Event MessageDropped(SimulationClock at, NodeID from_id, NodeID to_id,
                               const Message& msg);
 
   static Event Timer(SimulationClock at, NodeID node_id,
