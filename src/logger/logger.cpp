@@ -40,6 +40,7 @@ const HandlerMap& DefaultHandlers() {
     };
 
     return handler_map;
+    
   }();
 
   return kDefaultHandlers;
@@ -53,18 +54,20 @@ Logger Logger::WithDefaultHandlers() {
   Logger l;
 
   for (const auto& [type, handler] : DefaultHandlers()) {
-    l.RegisterHandler(type, handler);
+    l.RegisterHandler(type, EventHandler(handler));
   }
-  
+
   return l;
 }
 
-void Logger::RegisterHandler(EEventType event_type, EventHandler handler) {
+void Logger::RegisterHandler(EEventType event_type, EventHandler&& handler) {
   event_handlers_[event_type] = std::move(handler);
 }
 
 void Logger::operator()(const Event& event) {
-  auto it = event_handlers_.find(event.GetType());
+  EEventType curr_event_type = event.GetType();
+
+  auto it = event_handlers_.find(curr_event_type);
 
   if (it == event_handlers_.end()) {
     return;
