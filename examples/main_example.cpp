@@ -57,9 +57,9 @@ void RunExample() {
 
   logger.RegisterHandler(EEventType::kMESSAGE_DROPPED, [](const Event& e) {
     const auto& p = std::get<MessageDroppedPayload>(e.GetPayload());
-    std::cout << "[" << e.GetTimestamp() << "] DROPPED "
-              << static_cast<int>(p.from_id.GetIndex()) << " -x-> "
-              << static_cast<int>(p.to_id.GetIndex()) << " type=\""
+    std::cout << "[" << e.GetTimestamp() << "] "
+              << static_cast<int>(p.to_id.GetIndex()) << " X--- "
+              << static_cast<int>(p.from_id.GetIndex()) << " type=\""
               << p.msg.GetType() << "\"\n";
   });
 
