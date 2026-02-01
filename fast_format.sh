@@ -2,4 +2,4 @@
 
 set -e
 
-find src -type f -name "*.h" -o -name "*.cpp" | xargs clang-format -i
+find . -type f -name "*.h" -o -name "*.cpp" | xargs clang-format -i
