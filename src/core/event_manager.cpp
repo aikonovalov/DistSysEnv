@@ -3,9 +3,9 @@
 #include <memory>
 #include <optional>
 #include <variant>
-#include "event.h"
-#include "../node/context.h"
 #include "../logger/logger.h"
+#include "../node/context.h"
+#include "event.h"
 
 namespace distsysenv {
 
@@ -31,19 +31,18 @@ std::optional<Event> EventManager::PopCurrentEvent() {
 
 void EventManager::HandleEvent(const Event& curr_event) {
   NodeID target_id = id_manager_.GetNetworkID();
-  
+
   if (curr_event.GetType() == EEventType::kMESSAGE_RECEIVE) {
-    const auto& payload = std::get<MessageReceivePayload>(curr_event.GetPayload());
+    const auto& payload =
+        std::get<MessageReceivePayload>(curr_event.GetPayload());
     target_id = payload.to_id;
-  }
-  else if (curr_event.GetType() == EEventType::kTIMER) {
+  } else if (curr_event.GetType() == EEventType::kTIMER) {
     const auto& payload = std::get<TimerPayload>(curr_event.GetPayload());
     target_id = payload.node_id;
-  }
-  else if (curr_event.GetType() == EEventType::kMESSAGE_DROPPED) {
+  } else if (curr_event.GetType() == EEventType::kMESSAGE_DROPPED) {
     return;
   }
-  
+
   auto it = node_pool_.find(target_id);
   if (it != node_pool_.end() && it->second) {
     Context ctx(*this, target_id);

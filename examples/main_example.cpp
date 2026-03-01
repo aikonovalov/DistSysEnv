@@ -24,15 +24,12 @@ struct EchoNode {
 
 void RunExample() {
   EventManager manager;
-  
+
   Logger logger = Logger::WithDefaultHandlers();
   manager.SetLogger(std::move(logger));
 
   NetworkSettings net_settings{
-      .drop_prob = 0.0f,
-      .min_delay = 1,
-      .max_delay = 5
-  };
+      .drop_prob = 0.0f, .min_delay = 1, .max_delay = 5};
   Network network(net_settings, 42);
   manager.RegisterNetwork(std::move(network));
 
@@ -43,8 +40,7 @@ void RunExample() {
   NodeID b = manager.RegisterNode(std::move(node_b));
 
   manager.Schedule(
-      Event::MessageSend(0, a, b, Message::FromDescription("hello", {}))
-  );
+      Event::MessageSend(0, a, b, Message::FromDescription("hello", {})));
 
   manager.ProcessUntil(100);
 

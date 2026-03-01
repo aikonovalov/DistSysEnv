@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../utils/node_id.h"
 #include "../utils/message.h"
+#include "../utils/node_id.h"
 #include "../utils/utils.h"
 
 namespace distsysenv {
@@ -16,11 +16,11 @@ class Context {
   void Send(NodeID to_id, Message msg);
 
   void SetTimer(const std::string& timer_name, SimulationClock duration);
-  
+
   void ScheduleEvent(const Event& event);
-  
+
   SimulationClock Now() const;
-  
+
   NodeID GetOwnID() const;
 
  private:

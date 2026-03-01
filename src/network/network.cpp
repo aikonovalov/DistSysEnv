@@ -1,8 +1,8 @@
 #include "network.h"
-#include "../core/event.h"
-#include "../node/context.h"
 #include <cassert>
 #include <random>
+#include "../core/event.h"
+#include "../node/context.h"
 
 namespace distsysenv {
 
@@ -14,24 +14,20 @@ void Network::HandleEvent(const Event& event, Context& ctx) {
     const auto& payload = std::get<MessageSendPayload>(event.GetPayload());
 
     HandleMessageSend(payload.from_id, payload.to_id, payload.msg, ctx);
-
   }
 }
 
-void Network::HandleMessageSend(NodeID from, NodeID to, const Message& msg, Context& ctx) {
+void Network::HandleMessageSend(NodeID from, NodeID to, const Message& msg,
+                                Context& ctx) {
   if (ShouldDrop(from, to)) {
-    ctx.ScheduleEvent(
-        Event::MessageDropped(ctx.Now(), from, to, msg)
-    );
+    ctx.ScheduleEvent(Event::MessageDropped(ctx.Now(), from, to, msg));
 
     return;
   }
 
   SimulationClock delay = RandomDelay();
 
-  ctx.ScheduleEvent(
-      Event::MessageReceive(ctx.Now() + delay, from, to, msg)
-  );
+  ctx.ScheduleEvent(Event::MessageReceive(ctx.Now() + delay, from, to, msg));
 }
 
 bool Network::ShouldDrop(NodeID from, NodeID to) {

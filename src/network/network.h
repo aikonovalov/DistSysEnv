@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../utils/node_id.h"
-#include "../utils/message.h"
-#include "network_settings.h"
 #include <random>
+#include "../utils/message.h"
+#include "../utils/node_id.h"
+#include "network_settings.h"
 
 namespace distsysenv {
 
@@ -17,10 +17,11 @@ class Network {
   void HandleEvent(const Event& event, Context& ctx);
 
  private:
-  void HandleMessageSend(NodeID from, NodeID to, const Message& msg, Context& ctx);
-  
+  void HandleMessageSend(NodeID from, NodeID to, const Message& msg,
+                         Context& ctx);
+
   bool ShouldDrop(NodeID from, NodeID to);
-  
+
   SimulationClock RandomDelay();
 
   NetworkSettings settings_;

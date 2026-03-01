@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../utils/node_id.h"
-#include "../utils/message.h"
 #include <functional>
 #include <string>
+#include "../utils/message.h"
+#include "../utils/node_id.h"
 
 namespace distsysenv {
 
