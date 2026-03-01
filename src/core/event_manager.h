@@ -14,6 +14,8 @@ namespace distsysenv {
 
 using EventQueue = std::priority_queue<Event, std::vector<Event>, EventEarlier>;
 
+class Logger;
+
 class EventManager {
  public:
   SimulationClock Now() const;
@@ -31,6 +33,8 @@ class EventManager {
 
   void ProcessUntil(SimulationClock until);
   
+  void SetLogger(Logger&& logger);
+  
   template<typename T>
   NodeID RegisterNode(T node);
   
@@ -43,6 +47,8 @@ class EventManager {
   
   NodeIDManager id_manager_;
   std::unordered_map<NodeID, NodeHandler> node_pool_;
+  
+  std::unique_ptr<Logger> logger_ = nullptr;
 };
 
 template<typename T>

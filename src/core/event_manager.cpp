@@ -5,6 +5,7 @@
 #include <variant>
 #include "event.h"
 #include "../node/context.h"
+#include "../logger/logger.h"
 
 namespace distsysenv {
 
@@ -50,6 +51,10 @@ void EventManager::HandleEvent(const Event& curr_event) {
   }
 }
 
+void EventManager::SetLogger(Logger&& logger) {
+  logger_ = std::make_unique<Logger>(std::move(logger));
+}
+
 bool EventManager::Step(const std::function<bool(const Event&)>& exit_functor) {
   std::optional<Event> event = PopCurrentEvent();
   if (!event.has_value()) {
@@ -58,6 +63,10 @@ bool EventManager::Step(const std::function<bool(const Event&)>& exit_functor) {
 
   if (exit_functor(*event)) {
     return false;
+  }
+
+  if (logger_ != nullptr) {
+    (*logger_)(*event);
   }
 
   HandleEvent(*event);

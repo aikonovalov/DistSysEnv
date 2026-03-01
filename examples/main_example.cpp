@@ -1,5 +1,6 @@
 #include "../src/core/event.h"
 #include "../src/core/event_manager.h"
+#include "../src/logger/logger.h"
 #include "../src/network/network.h"
 #include "../src/network/network_settings.h"
 #include "../src/node/context.h"
@@ -11,21 +12,21 @@ namespace distsysenv {
 
 struct EchoNode {
   void OnMessage(NodeID from, const Message& msg, Context& ctx) {
-    std::cout << "[" << static_cast<int32_t>(ctx.GetOwnID().GetIndex())
-              << "] '" << msg.GetType() 
-              << "' from " << static_cast<int32_t>(from.GetIndex()) << std::endl;
-    
+    (void)msg;
     ctx.Send(from, Message::FromDescription("echo_reply", {}));
   }
 
   void OnTimer(const std::string& timer_name, Context& ctx) {
-    std::cout << "[" << static_cast<int32_t>(ctx.GetOwnID().GetIndex())
-              << "] Timer " << timer_name << std::endl;
+    (void)timer_name;
+    (void)ctx;
   }
 };
 
 void RunExample() {
   EventManager manager;
+  
+  Logger logger = Logger::WithDefaultHandlers();
+  manager.SetLogger(std::move(logger));
 
   NetworkSettings net_settings{
       .drop_prob = 0.0f,
