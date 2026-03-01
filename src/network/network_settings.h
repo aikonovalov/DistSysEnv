@@ -5,7 +5,7 @@
 namespace distsysenv {
 
 struct NetworkSettings {
-  float drop_chance = 0.0f;
+  float drop_prob = 0.0f;
   SimulationClock min_delay = 1;
   SimulationClock max_delay = 10;
 };

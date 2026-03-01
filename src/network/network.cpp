@@ -1,82 +1,58 @@
 #include "network.h"
+#include "../core/event.h"
+#include "../node/context.h"
+#include <cassert>
+#include <random>
 
 namespace distsysenv {
 
-Network::Network(EventManager& event_manager, NodePool& node_pool,
-                 const NetworkSettings& settings, RandomSeed rng_seed)
-    : event_manager_(event_manager),
-      node_pool_(node_pool),
-      settings_(settings),
-      rng_seed_(rng_seed),
-      rng_(static_cast<std::mt19937::result_type>(rng_seed_)) {
-  node_pool_.SubscribeSendRequest(
-      [this](NodeID from_id, NodeID to_id, Message msg) {
-        OnSendRequest(from_id, to_id, std::move(msg));
-      });
-}
+Network::Network(const NetworkSettings& settings, uint64_t seed)
+    : settings_(settings), rng_(seed) {}
 
-void Network::OnEvent(const Event& event) {
-  if (event.GetType() == EEventType::kMESSAGE_RECEIVE) {
-    HandleMessageReceive(event);
-  } else if (event.GetType() == EEventType::kTIMER) {
-    HandleTimer(event);
+void Network::HandleEvent(const Event& event, Context& ctx) {
+  if (event.GetType() == EEventType::kMESSAGE_SEND) {
+    const auto& payload = std::get<MessageSendPayload>(event.GetPayload());
+
+    HandleMessageSend(payload.from_id, payload.to_id, payload.msg, ctx);
+
   }
 }
 
-void Network::HandleMessageReceive(const Event& event) {
-  const MessageReceivePayload& payload =
-      std::get<MessageReceivePayload>(event.GetPayload());
-  node_pool_.Deliver(payload.from_id, payload.to_id, payload.msg);
-}
+void Network::HandleMessageSend(NodeID from, NodeID to, const Message& msg, Context& ctx) {
+  if (ShouldDrop(from, to)) {
+    ctx.ScheduleEvent(
+        Event::MessageDropped(ctx.Now(), from, to, msg)
+    );
 
-void Network::HandleTimer(const Event& event) {
-  const TimerPayload& payload = std::get<TimerPayload>(event.GetPayload());
-  node_pool_.DeliverTimer(payload.node_id, payload.timer_name);
-}
-
-void Network::OnSendRequest(NodeID from_id, NodeID to_id, Message msg) {
-  SimulationClock now = event_manager_.Now();
-
-  event_manager_.Schedule(
-      Event::MessageSend(now, from_id, to_id, Message(msg)));
-
-  if (ShouldDrop(from_id, to_id)) {
-    event_manager_.Schedule(
-        Event::MessageDropped(now, from_id, to_id, std::move(msg)));
     return;
   }
 
-  SimulationClock delay = RandomDelay(from_id, to_id);
-  SimulationClock delivery_time = now + delay;
-  event_manager_.Schedule(
-      Event::MessageReceive(delivery_time, from_id, to_id, std::move(msg)));
+  SimulationClock delay = RandomDelay();
+
+  ctx.ScheduleEvent(
+      Event::MessageReceive(ctx.Now() + delay, from, to, msg)
+  );
 }
 
-bool Network::ShouldDrop(NodeID from_id, NodeID to_id) {
-  if (settings_.drop_chance <= 0.0f) {
+bool Network::ShouldDrop(NodeID from, NodeID to) {
+  if (settings_.drop_prob <= 0.0f) {
     return false;
   }
 
-  if (settings_.drop_chance >= 1.0f) {
+  if (settings_.drop_prob >= 1.0f) {
     return true;
   }
 
-  uint64_t h = static_cast<uint64_t>(from_id.GetHash()) ^
-               (static_cast<uint64_t>(to_id.GetHash()) << 1);
-  std::mt19937 pair_rng(static_cast<std::mt19937::result_type>(h));
+  std::uniform_real_distribution<float> dist(0.0f, 1.0f);
 
-  std::bernoulli_distribution drop_distribution(settings_.drop_chance);
-  return drop_distribution(pair_rng);
+  return dist(rng_) < settings_.drop_prob;
 }
 
-SimulationClock Network::RandomDelay(NodeID from_id, NodeID to_id) {
-  uint64_t h = static_cast<uint64_t>(from_id.GetHash()) ^
-               (static_cast<uint64_t>(to_id.GetHash()) << 1);
-  std::mt19937 pair_rng(static_cast<std::mt19937::result_type>(h));
-
+SimulationClock Network::RandomDelay() {
   std::uniform_int_distribution<SimulationClock> delay_distribution(
       settings_.min_delay, settings_.max_delay);
-  return delay_distribution(pair_rng);
+
+  return delay_distribution(rng_);
 }
 
 }  // namespace distsysenv

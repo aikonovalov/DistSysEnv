@@ -1,57 +1,53 @@
 #include "../src/core/event.h"
 #include "../src/core/event_manager.h"
-#include "../src/logger/logger.h"
 #include "../src/network/network.h"
 #include "../src/network/network_settings.h"
-#include "../src/node/node_pool.h"
+#include "../src/node/context.h"
 #include "../src/utils/message.h"
-#include "echo_node.h"
 
 #include <iostream>
-#include <memory>
 
 namespace distsysenv {
 
-static NodeFactory MakeEchoNodeFactory() {
-  return [](Mailbox mailbox, TimerManager timer_manager) -> NodeFactoryResult {
-    auto node = std::make_shared<EchoNode>(std::move(mailbox),
-                                           std::move(timer_manager));
+struct EchoNode {
+  void OnMessage(NodeID from, const Message& msg, Context& ctx) {
+    std::cout << "[" << static_cast<int32_t>(ctx.GetOwnID().GetIndex())
+              << "] '" << msg.GetType() 
+              << "' from " << static_cast<int32_t>(from.GetIndex()) << std::endl;
+    
+    ctx.Send(from, Message::FromDescription("echo_reply", {}));
+  }
 
-    DeliveryFunction deliver = [node](NodeID from_id, const Message& msg) {
-      node->OnMessage(from_id, msg);
-    };
-
-    TimerDeliveryFunction timer_deliver = [node](const std::string& name) {
-      node->OnTimer(name);
-    };
-
-    return {std::move(deliver), std::move(timer_deliver)};
-  };
-}
+  void OnTimer(const std::string& timer_name, Context& ctx) {
+    std::cout << "[" << static_cast<int32_t>(ctx.GetOwnID().GetIndex())
+              << "] Timer " << timer_name << std::endl;
+  }
+};
 
 void RunExample() {
-  EventManager events;
-  NodePool pool(events);
-  Network network(
-      events, pool,
-      NetworkSettings{.drop_chance = 0.0f, .min_delay = 1, .max_delay = 5},
-      RandomSeed{42});
+  EventManager manager;
 
-  Logger logger = Logger::WithDefaultHandlers();
+  NetworkSettings net_settings{
+      .drop_prob = 0.0f,
+      .min_delay = 1,
+      .max_delay = 5
+  };
+  Network network(net_settings, 42);
+  manager.RegisterNetwork(std::move(network));
 
-  NodeID a = pool.CreateNode(MakeEchoNodeFactory());
-  NodeID b = pool.CreateNode(MakeEchoNodeFactory());
+  EchoNode node_a;
+  NodeID a = manager.RegisterNode(std::move(node_a));
 
-  Message echo_msg = Message::FromDescription("echo", {});
+  EchoNode node_b;
+  NodeID b = manager.RegisterNode(std::move(node_b));
 
-  events.Schedule(Event::MessageReceive(1, a, b, echo_msg));
+  manager.Schedule(
+      Event::MessageSend(0, a, b, Message::FromDescription("hello", {}))
+  );
 
-  events.ProcessUntil(100, [&logger, &network](const Event& e) {
-    logger(e);
-    network.OnEvent(e);
-  });
+  manager.ProcessUntil(100);
 
-  std::cout << "Example run finished.\n";
+  std::cout << "Done" << std::endl;
 }
 
 }  // namespace distsysenv

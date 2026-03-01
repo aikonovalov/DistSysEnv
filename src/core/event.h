@@ -55,7 +55,8 @@ using EventPayload = std::variant<MessageSendPayload, MessageReceivePayload,
                                   NodeFailPayload, NodeRecoverPayload>;
 
 class Event {
-  Event(EEventType type, SimulationClock timestamp, EventPayload payload);
+  Event(EEventType type, NodeID to_node_id, SimulationClock timestamp,
+        EventPayload payload);
 
  public:
   static Event MessageSend(SimulationClock at, NodeID from_id, NodeID to_id,
@@ -78,10 +79,13 @@ class Event {
 
   const SimulationClock& GetTimestamp() const;
 
+  const NodeID& GetToNodeId() const;
+
   const EventPayload& GetPayload() const;
 
  private:
   EEventType type_;
+  NodeID to_node_id_;
   SimulationClock timestamp_;
   EventPayload payload_;
 };

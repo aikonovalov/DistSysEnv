@@ -1,4 +1,5 @@
 #include "node_id_manager.h"
+#include "node_id.h"
 
 namespace distsysenv {
 
@@ -22,6 +23,10 @@ NodeID NodeIDManager::Generate() {
   active_generations_[index] = generation;
 
   return NodeID(index, generation);
+}
+
+NodeID NodeIDManager::GetNetworkID() {
+  return NodeID(Index{0}, Generation{1});
 }
 
 void NodeIDManager::Release(const NodeID& id) {
