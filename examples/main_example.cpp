@@ -16,6 +16,11 @@ struct EchoNode {
     ctx.Send(from, Message::FromDescription("echo_reply", {}));
   }
 
+  void OnLocalMessage(const Message& msg, Context& ctx) {
+    (void)msg;
+    (void)ctx;
+  }
+
   void OnTimer(const std::string& timer_name, Context& ctx) {
     (void)timer_name;
     (void)ctx;
@@ -41,8 +46,10 @@ void RunExample() {
 
   manager.Schedule(
       Event::MessageSend(0, a, b, Message::FromDescription("hello", {})));
+  
+  manager.SendLocal(b, Message::FromDescription("local_message", {}));
 
-  manager.ProcessUntil(100);
+  manager.ProcessUntil(20);
 
   std::cout << "Done" << std::endl;
 }

@@ -27,6 +27,11 @@ Event Event::MessageDropped(SimulationClock at, NodeID from_id, NodeID to_id,
                MessageDroppedPayload{from_id, to_id, msg});
 }
 
+Event Event::LocalMessage(SimulationClock at, NodeID node_id, Message msg) {
+  return Event(EEventType::kLOCAL_MESSAGE, node_id, at,
+               LocalMessagePayload{node_id, std::move(msg)});
+}
+
 Event Event::Timer(SimulationClock at, NodeID node_id,
                    const std::string& timer_name) {
   return Event(EEventType::kTIMER, node_id, at,

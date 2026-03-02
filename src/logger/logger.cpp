@@ -14,7 +14,7 @@ const HandlerMap& DefaultHandlers() {
       std::cout << "[" << e.GetTimestamp() << "] "
                 << static_cast<int>(p.from_id.GetIndex()) << " ---> "
                 << static_cast<int>(p.to_id.GetIndex()) << " type=\""
-                << p.msg.GetType() << "\"\n";
+                << p.msg.GetType() << "\"" << std::endl;
     };
 
     handler_map[EEventType::kMESSAGE_RECEIVE] = [](const Event& e) {
@@ -23,7 +23,7 @@ const HandlerMap& DefaultHandlers() {
       std::cout << "[" << e.GetTimestamp() << "] "
                 << static_cast<int>(p.to_id.GetIndex()) << " <--- "
                 << static_cast<int>(p.from_id.GetIndex()) << " type=\""
-                << p.msg.GetType() << "\"\n";
+                << p.msg.GetType() << "\"" << std::endl;
     };
 
     handler_map[EEventType::kMESSAGE_DROPPED] = [](const Event& e) {
@@ -32,7 +32,15 @@ const HandlerMap& DefaultHandlers() {
       std::cout << "[" << e.GetTimestamp() << "] "
                 << static_cast<int>(p.to_id.GetIndex()) << " X--- "
                 << static_cast<int>(p.from_id.GetIndex()) << " type=\""
-                << p.msg.GetType() << "\"\n";
+                << p.msg.GetType() << "\"" << std::endl;
+    };
+
+    handler_map[EEventType::kLOCAL_MESSAGE] = [](const Event& e) {
+      const auto& p = std::get<LocalMessagePayload>(e.GetPayload());
+
+      std::cout << "[" << e.GetTimestamp() << "] "
+                << static_cast<int>(p.node_id.GetIndex()) << " <--- local "
+                << "type=" << p.msg.GetType() << "\"" << std::endl;
     };
 
     handler_map[EEventType::kTIMER] = [](const Event& e) {
@@ -40,7 +48,7 @@ const HandlerMap& DefaultHandlers() {
 
       std::cout << "[" << e.GetTimestamp() << "] Timer fired on id"
                 << static_cast<int>(p.node_id.GetIndex()) << " name=\""
-                << p.timer_name << "\"\n";
+                << p.timer_name << "\"" << std::endl;
     };
 
     return handler_map;

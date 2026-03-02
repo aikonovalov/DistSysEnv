@@ -54,6 +54,10 @@ void EventManager::SetLogger(Logger&& logger) {
   logger_ = std::make_unique<Logger>(std::move(logger));
 }
 
+void EventManager::SendLocal(NodeID to, Message msg) {
+  Schedule(Event::LocalMessage(now_, to, std::move(msg)));
+}
+
 bool EventManager::Step(const std::function<bool(const Event&)>& exit_functor) {
   std::optional<Event> event = PopCurrentEvent();
   if (!event.has_value()) {

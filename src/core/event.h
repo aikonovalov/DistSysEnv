@@ -14,6 +14,7 @@ enum class EEventType {
   kMESSAGE_SEND,
   kMESSAGE_RECEIVE,
   kMESSAGE_DROPPED,
+  kLOCAL_MESSAGE,
   kTIMER,
   kNODE_FAIL,
   kNODE_RECOVER
@@ -37,6 +38,11 @@ struct MessageDroppedPayload {
   Message msg;
 };
 
+struct LocalMessagePayload {
+  NodeID node_id;
+  Message msg;
+};
+
 struct TimerPayload {
   NodeID node_id;
   std::string timer_name;
@@ -51,8 +57,8 @@ struct NodeRecoverPayload {
 };
 
 using EventPayload = std::variant<MessageSendPayload, MessageReceivePayload,
-                                  MessageDroppedPayload, TimerPayload,
-                                  NodeFailPayload, NodeRecoverPayload>;
+                                  MessageDroppedPayload, LocalMessagePayload,
+                                  TimerPayload, NodeFailPayload, NodeRecoverPayload>;
 
 class Event {
   Event(EEventType type, NodeID to_node_id, SimulationClock timestamp,
@@ -67,6 +73,9 @@ class Event {
 
   static Event MessageDropped(SimulationClock at, NodeID from_id, NodeID to_id,
                               const Message& msg);
+
+  static Event LocalMessage(SimulationClock at, NodeID node_id,
+                            Message msg);
 
   static Event Timer(SimulationClock at, NodeID node_id,
                      const std::string& timer_name);

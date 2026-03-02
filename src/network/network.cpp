@@ -27,6 +27,8 @@ void Network::HandleMessageSend(NodeID from, NodeID to, const Message& msg,
 
   SimulationClock delay = RandomDelay();
 
+  assert(delay > 0 && "Delay must be positive");
+
   ctx.ScheduleEvent(Event::MessageReceive(ctx.Now() + delay, from, to, msg));
 }
 

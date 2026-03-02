@@ -34,6 +34,8 @@ class EventManager {
   void ProcessUntil(SimulationClock until);
 
   void SetLogger(Logger&& logger);
+  
+  void SendLocal(NodeID to, Message msg);
 
   template <typename T>
   NodeID RegisterNode(T node);
@@ -61,6 +63,11 @@ NodeID EventManager::RegisterNode(T node) {
       const MessageReceivePayload& payload =
           std::get<MessageReceivePayload>(event.GetPayload());
       node_owner->OnMessage(payload.from_id, payload.msg, ctx);
+
+    } else if (event.GetType() == EEventType::kLOCAL_MESSAGE) {
+      const LocalMessagePayload& payload =
+          std::get<LocalMessagePayload>(event.GetPayload());
+      node_owner->OnLocalMessage(payload.msg, ctx);
 
     } else if (event.GetType() == EEventType::kTIMER) {
       const TimerPayload& payload = std::get<TimerPayload>(event.GetPayload());
