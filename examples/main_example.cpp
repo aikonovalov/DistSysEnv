@@ -48,8 +48,12 @@ void RunExample() {
       Event::MessageSend(0, a, b, Message::FromDescription("hello", {})));
   
   manager.SendLocal(b, Message::FromDescription("local_message", {}));
+  
+  manager.Schedule(Event::NodeFail(10, b));
+  
+  manager.Schedule(Event::NodeRecover(30, b));
 
-  manager.ProcessUntil(20);
+  manager.ProcessUntil(50);
 
   std::cout << "Done" << std::endl;
 }

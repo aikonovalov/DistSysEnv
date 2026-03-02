@@ -36,6 +36,9 @@ class EventManager {
   void SetLogger(Logger&& logger);
   
   void SendLocal(NodeID to, Message msg);
+  
+  void FailNode(NodeID node_id);
+  void RecoverNode(NodeID node_id);
 
   template <typename T>
   NodeID RegisterNode(T node);

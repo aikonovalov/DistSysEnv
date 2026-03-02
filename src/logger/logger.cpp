@@ -51,6 +51,22 @@ const HandlerMap& DefaultHandlers() {
                 << p.timer_name << "\"" << std::endl;
     };
 
+    handler_map[EEventType::kNODE_FAIL] = [](const Event& e) {
+      const auto& p = std::get<NodeFailPayload>(e.GetPayload());
+
+      std::cout << "[" << e.GetTimestamp() << "] "
+                << static_cast<int>(p.node_id.GetIndex()) << " FAILED"
+                << std::endl;
+    };
+
+    handler_map[EEventType::kNODE_RECOVER] = [](const Event& e) {
+      const auto& p = std::get<NodeRecoverPayload>(e.GetPayload());
+
+      std::cout << "[" << e.GetTimestamp() << "] "
+                << static_cast<int>(p.node_id.GetIndex()) << " RECOVERED"
+                << std::endl;
+    };
+
     return handler_map;
   }();
 

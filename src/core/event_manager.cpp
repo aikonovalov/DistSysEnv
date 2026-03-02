@@ -36,6 +36,9 @@ void EventManager::HandleEvent(const Event& curr_event) {
     const auto& payload =
         std::get<MessageReceivePayload>(curr_event.GetPayload());
     target_id = payload.to_id;
+  } else if (curr_event.GetType() == EEventType::kLOCAL_MESSAGE) {
+    const auto& payload = std::get<LocalMessagePayload>(curr_event.GetPayload());
+    target_id = payload.node_id;
   } else if (curr_event.GetType() == EEventType::kTIMER) {
     const auto& payload = std::get<TimerPayload>(curr_event.GetPayload());
     target_id = payload.node_id;
@@ -56,6 +59,14 @@ void EventManager::SetLogger(Logger&& logger) {
 
 void EventManager::SendLocal(NodeID to, Message msg) {
   Schedule(Event::LocalMessage(now_, to, std::move(msg)));
+}
+
+void EventManager::FailNode(NodeID node_id) {
+  Schedule(Event::NodeFail(now_, node_id));
+}
+
+void EventManager::RecoverNode(NodeID node_id) {
+  Schedule(Event::NodeRecover(now_, node_id));
 }
 
 bool EventManager::Step(const std::function<bool(const Event&)>& exit_functor) {
