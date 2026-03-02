@@ -13,6 +13,8 @@ class NodeID {
 
   NodeID() = delete;
 
+  NodeID(Index index, Generation generation);
+
   Index GetIndex() const;
 
   Generation GetGeneration() const;
@@ -28,7 +30,7 @@ class NodeID {
  private:
   friend class NodeIDManager;
 
-  NodeID(Index index, Generation generation);
+  NodeID(Index index, Generation generation, bool allow_negative_index);
 
   Index index_;
   Generation generation_;

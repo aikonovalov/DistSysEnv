@@ -22,15 +22,15 @@ NodeID NodeIDManager::Generate() {
 
   active_generations_[index] = generation;
 
-  return NodeID(index, generation);
+  return NodeID(index, generation, true);
 }
 
 NodeID NodeIDManager::GetNetworkID() const {
-  return NodeID(Index{-1}, Generation{1});
+  return NodeID(Index{-1}, Generation{1}, true);
 }
 
 NodeID NodeIDManager::GetInvariantCheckerID() const {
-  return NodeID(Index{-2}, Generation{1});
+  return NodeID(Index{-2}, Generation{1}, true);
 }
 
 void NodeIDManager::Release(const NodeID& id) {

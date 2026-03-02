@@ -1,9 +1,19 @@
 #include "node_id.h"
+#include <cassert>
+#include <cstdint>
+#include <stdexcept>
 
 namespace distsysenv {
 
 NodeID::NodeID(Index index, Generation generation)
-    : index_(index), generation_(generation) {}
+    : index_(index), generation_(generation) {
+  assert(static_cast<int32_t>(index) > 0 && "Index must be on negative");
+}
+
+NodeID::NodeID(Index index, Generation generation, bool allow_negative)
+    : index_(index), generation_(generation) {
+  (void)allow_negative;
+}
 
 NodeID::Index NodeID::GetIndex() const {
   return index_;
