@@ -32,6 +32,12 @@ Event Event::LocalMessage(SimulationClock at, NodeID node_id, Message msg) {
                LocalMessagePayload{node_id, std::move(msg)});
 }
 
+Event Event::CheckerMessage(SimulationClock at, NodeID checker_id,
+                            Message msg) {
+  return Event(EEventType::kCHECKER_MESSAGE, checker_id, at,
+               CheckerMessagePayload{std::move(msg)});
+}
+
 Event Event::Timer(SimulationClock at, NodeID node_id,
                    const std::string& timer_name) {
   return Event(EEventType::kTIMER, node_id, at,

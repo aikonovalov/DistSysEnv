@@ -42,7 +42,8 @@ void Network::HandleMessageSend(NodeID from, NodeID to, const Message& msg,
 bool Network::ShouldDrop(NodeID from, NodeID to) {
   NodeNetworkSettings& curr_settings = node_settings_[to];
 
-  if (curr_settings.is_failed || curr_settings.partitioned_from.contains(from)) {
+  if (curr_settings.is_failed ||
+      curr_settings.partitioned_from.contains(from)) {
     return true;
   }
 

@@ -15,6 +15,8 @@ class Context {
 
   void Send(NodeID to_id, Message msg);
 
+  void SendLocal(Message msg);
+
   void SetTimer(const std::string& timer_name, SimulationClock duration);
 
   void ScheduleEvent(const Event& event);

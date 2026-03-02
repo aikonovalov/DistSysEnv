@@ -25,8 +25,12 @@ NodeID NodeIDManager::Generate() {
   return NodeID(index, generation);
 }
 
-NodeID NodeIDManager::GetNetworkID() {
-  return NodeID(Index{0}, Generation{1});
+NodeID NodeIDManager::GetNetworkID() const {
+  return NodeID(Index{-1}, Generation{1});
+}
+
+NodeID NodeIDManager::GetInvariantCheckerID() const {
+  return NodeID(Index{-2}, Generation{1});
 }
 
 void NodeIDManager::Release(const NodeID& id) {

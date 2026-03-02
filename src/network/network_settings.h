@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../utils/utils.h"
-#include "../utils/node_id.h"
 #include <unordered_set>
+#include "../utils/node_id.h"
+#include "../utils/utils.h"
 
 namespace distsysenv {
 

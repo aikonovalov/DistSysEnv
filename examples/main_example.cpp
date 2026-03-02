@@ -11,8 +11,13 @@
 namespace distsysenv {
 
 struct EchoNode {
+  int msg_count = 0;
+
   void OnMessage(NodeID from, const Message& msg, Context& ctx) {
-    (void)msg;
+    msg_count++;
+
+    ctx.SendLocal(Message::FromDescription("update", {}));
+
     ctx.Send(from, Message::FromDescription("echo_reply", {}));
   }
 
@@ -27,6 +32,19 @@ struct EchoNode {
   }
 };
 
+struct InvariantChecker {
+  int state_updates = 0;
+
+  void OnLocalMessage(const Message& msg, Context& ctx) {
+    if (msg.GetType() == "update") {
+      state_updates++;
+
+      std::cout << "[CHECKER] Upd" << state_updates << " " << ctx.Now()
+                << std::endl;
+    }
+  }
+};
+
 void RunExample() {
   EventManager manager;
 
@@ -38,6 +56,9 @@ void RunExample() {
   Network network(net_settings, 42);
   manager.RegisterNetwork(std::move(network));
 
+  InvariantChecker checker;
+  manager.RegisterChecker(std::move(checker));
+
   EchoNode node_a;
   NodeID a = manager.RegisterNode(std::move(node_a));
 
@@ -46,11 +67,11 @@ void RunExample() {
 
   manager.Schedule(
       Event::MessageSend(0, a, b, Message::FromDescription("hello", {})));
-  
+
   manager.SendLocal(b, Message::FromDescription("local_message", {}));
-  
+
   manager.Schedule(Event::NodeFail(10, b));
-  
+
   manager.Schedule(Event::NodeRecover(30, b));
 
   manager.ProcessUntil(50);

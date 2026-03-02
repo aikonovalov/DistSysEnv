@@ -11,7 +11,12 @@ Context::Context(EventManager& event_manager, NodeID own_id)
 void Context::Send(NodeID to_id, Message msg) {
   Event send_event =
       Event::MessageSend(event_manager_.Now(), id_, to_id, std::move(msg));
+
   ScheduleEvent(send_event);
+}
+
+void Context::SendLocal(Message msg) {
+  event_manager_.SendToChecker(std::move(msg));
 }
 
 void Context::SetTimer(const std::string& timer_name,
@@ -20,6 +25,7 @@ void Context::SetTimer(const std::string& timer_name,
 
   Event timer_event =
       Event::Timer(event_manager_.Now() + duration, id_, timer_name);
+
   ScheduleEvent(timer_event);
 }
 

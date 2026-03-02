@@ -34,9 +34,11 @@ class EventManager {
   void ProcessUntil(SimulationClock until);
 
   void SetLogger(Logger&& logger);
-  
+
   void SendLocal(NodeID to, Message msg);
-  
+
+  void SendToChecker(Message msg);
+
   void FailNode(NodeID node_id);
   void RecoverNode(NodeID node_id);
 
@@ -45,6 +47,9 @@ class EventManager {
 
   template <typename T>
   void RegisterNetwork(T node);
+
+  template <typename T>
+  void RegisterChecker(T node);
 
  private:
   SimulationClock now_ = 0.0;
@@ -92,6 +97,22 @@ void EventManager::RegisterNetwork(T node) {
   };
 
   node_pool_[network_id] = std::move(handler);
+}
+
+template <typename T>
+void EventManager::RegisterChecker(T node) {
+  NodeID checker_id = id_manager_.GetInvariantCheckerID();
+
+  auto node_owner = std::make_shared<T>(std::move(node));
+  NodeHandler handler = [node_owner](const Event& event, Context& ctx) {
+    if (event.GetType() == EEventType::kCHECKER_MESSAGE) {
+      const CheckerMessagePayload& payload =
+          std::get<CheckerMessagePayload>(event.GetPayload());
+      node_owner->OnLocalMessage(payload.msg, ctx);
+    }
+  };
+
+  node_pool_[checker_id] = std::move(handler);
 }
 
 }  // namespace distsysenv
