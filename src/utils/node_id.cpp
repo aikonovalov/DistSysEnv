@@ -1,6 +1,7 @@
 #include "node_id.h"
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 
 namespace distsysenv {
 
@@ -27,6 +28,32 @@ NodeID::Hash NodeID::GetHash() const {
   uint32_t generation =
       static_cast<uint32_t>(static_cast<int32_t>(generation_));
   return Hash{static_cast<uint64_t>(index) << 32u | generation};
+}
+
+NodeID NodeID::DecodeFromBytes(const Bytes& buffer, TOffset offset) {
+  assert(offset >= 0 &&
+         static_cast<size_t>(offset) + EncodedSize() <= buffer.size() &&
+         "NodeID::DecodeFromBytes buffer overflow");
+
+  Index index;
+  Generation gen;
+
+  std::memcpy(&index, buffer.data() + offset, sizeof(index));
+  std::memcpy(&gen, buffer.data() + offset + sizeof(index), sizeof(gen));
+
+  return NodeID{index, gen};
+}
+
+void NodeID::StoreToBuffer(Bytes& buffer, TOffset offset) const {
+  assert(offset >= 0 &&
+         static_cast<size_t>(offset) + EncodedSize() <= buffer.size() &&
+         "NodeID::StoreToBuffer buffer overflow");
+
+  const Index index = index_;
+  const Generation gen = generation_;
+
+  std::memcpy(buffer.data() + offset, &index, sizeof(index));
+  std::memcpy(buffer.data() + offset + sizeof(index), &gen, sizeof(gen));
 }
 
 bool operator==(const NodeID& a, const NodeID& b) {

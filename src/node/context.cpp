@@ -19,8 +19,7 @@ void Context::SendLocal(Message msg) {
   event_manager_.SendToChecker(std::move(msg));
 }
 
-void Context::SetTimer(const std::string& timer_name,
-                       SimulationClock duration) {
+void Context::SetTimer(const TTimerName& timer_name, SimulationClock duration) {
   assert(duration > 0 && "Duration must be greater than zero");
 
   Event timer_event =

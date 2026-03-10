@@ -54,7 +54,7 @@ const HandlerMap& DefaultHandlers() {
     handler_map[EEventType::kNODE_FAIL] = [](const Event& e) {
       const auto& p = std::get<NodeFailPayload>(e.GetPayload());
 
-      std::cout << "[" << e.GetTimestamp() << "] "
+      std::cout << "[" << e.GetTimestamp() << "] NODE "
                 << static_cast<int>(p.node_id.GetIndex()) << " FAILED"
                 << std::endl;
     };
@@ -62,7 +62,7 @@ const HandlerMap& DefaultHandlers() {
     handler_map[EEventType::kNODE_RECOVER] = [](const Event& e) {
       const auto& p = std::get<NodeRecoverPayload>(e.GetPayload());
 
-      std::cout << "[" << e.GetTimestamp() << "] "
+      std::cout << "[" << e.GetTimestamp() << "] NODE "
                 << static_cast<int>(p.node_id.GetIndex()) << " RECOVERED"
                 << std::endl;
     };

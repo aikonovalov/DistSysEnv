@@ -8,6 +8,9 @@ namespace distsysenv {
 using Byte = std::byte;
 using Bytes = std::vector<Byte>;
 
-using SimulationClock = uint64_t;
+using TOffset = int64_t;
+using TTimerName = std::string;
+
+using SimulationClock = float;
 
 }  // namespace distsysenv

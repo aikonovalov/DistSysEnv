@@ -86,7 +86,7 @@ class Event {
                               Message msg);
 
   static Event Timer(SimulationClock at, NodeID node_id,
-                     const std::string& timer_name);
+                     const TTimerName& timer_name);
 
   static Event NodeFail(SimulationClock at, NodeID node_id);
 

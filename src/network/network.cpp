@@ -15,11 +15,15 @@ void Network::HandleEvent(const Event& event, Context& ctx) {
     const auto& payload = std::get<MessageSendPayload>(event.GetPayload());
 
     HandleMessageSend(payload.from_id, payload.to_id, payload.msg, ctx);
+
   } else if (event.GetType() == EEventType::kNODE_FAIL) {
     const auto& payload = std::get<NodeFailPayload>(event.GetPayload());
+
     HandleNodeFail(payload.node_id);
+
   } else if (event.GetType() == EEventType::kNODE_RECOVER) {
     const auto& payload = std::get<NodeRecoverPayload>(event.GetPayload());
+
     HandleNodeRecover(payload.node_id);
   }
 }
@@ -61,17 +65,25 @@ bool Network::ShouldDrop(NodeID from, NodeID to) {
 }
 
 SimulationClock Network::RandomDelay() {
-  std::uniform_int_distribution<SimulationClock> delay_distribution(
+  std::uniform_real_distribution<SimulationClock> delay_distribution(
       settings_.min_delay, settings_.max_delay);
 
   return delay_distribution(rng_);
 }
 
 void Network::HandleNodeFail(NodeID node_id) {
+  if (node_id.GetIndex() < NodeID::Index{0}) {
+    return;
+  }
+
   node_settings_[node_id].is_failed = true;
 }
 
 void Network::HandleNodeRecover(NodeID node_id) {
+  if (node_id.GetIndex() < NodeID::Index{0}) {
+    return;
+  }
+
   node_settings_[node_id].is_failed = false;
 }
 

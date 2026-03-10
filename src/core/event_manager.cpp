@@ -35,16 +35,23 @@ void EventManager::HandleEvent(const Event& curr_event) {
   if (curr_event.GetType() == EEventType::kMESSAGE_RECEIVE) {
     const auto& payload =
         std::get<MessageReceivePayload>(curr_event.GetPayload());
+
     target_id = payload.to_id;
+
   } else if (curr_event.GetType() == EEventType::kLOCAL_MESSAGE) {
     const auto& payload =
         std::get<LocalMessagePayload>(curr_event.GetPayload());
+
     target_id = payload.node_id;
+
   } else if (curr_event.GetType() == EEventType::kCHECKER_MESSAGE) {
     target_id = id_manager_.GetInvariantCheckerID();
+
   } else if (curr_event.GetType() == EEventType::kTIMER) {
     const auto& payload = std::get<TimerPayload>(curr_event.GetPayload());
+
     target_id = payload.node_id;
+
   } else if (curr_event.GetType() == EEventType::kMESSAGE_DROPPED) {
     return;
   }
@@ -52,6 +59,7 @@ void EventManager::HandleEvent(const Event& curr_event) {
   auto it = node_pool_.find(target_id);
   if (it != node_pool_.end() && it->second) {
     Context ctx(*this, target_id);
+
     it->second(curr_event, ctx);
   }
 }
@@ -66,6 +74,7 @@ void EventManager::SendLocal(NodeID to, Message msg) {
 
 void EventManager::SendToChecker(Message msg) {
   NodeID checker_id = id_manager_.GetInvariantCheckerID();
+
   Schedule(Event::CheckerMessage(now_, checker_id, std::move(msg)));
 }
 

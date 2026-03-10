@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include "utils.h"
 
 namespace distsysenv {
 
@@ -20,6 +21,14 @@ class NodeID {
   Generation GetGeneration() const;
 
   Hash GetHash() const;
+
+  static constexpr size_t EncodedSize() {
+    return sizeof(Index) + sizeof(Generation);
+  }
+
+  static NodeID DecodeFromBytes(const Bytes& buffer, TOffset offset);
+
+  void StoreToBuffer(Bytes& buffer, TOffset offset) const;
 
   friend bool operator==(const NodeID& a, const NodeID& b);
 

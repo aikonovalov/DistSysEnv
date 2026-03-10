@@ -9,6 +9,7 @@ NodeID NodeIDManager::Generate() {
   if (!free_indices_.empty()) {
     index = free_indices_.front();
     free_indices_.pop();
+
   } else {
     index = next_index_;
     next_index_ = Index(static_cast<int32_t>(next_index_) + 1);
@@ -35,13 +36,16 @@ NodeID NodeIDManager::GetInvariantCheckerID() const {
 
 void NodeIDManager::Release(const NodeID& id) {
   Index index = id.GetIndex();
+
   active_generations_.erase(index);
+
   free_indices_.push(index);
 }
 
 bool NodeIDManager::IsValid(const NodeID& id) const {
   Index index = id.GetIndex();
   auto it = active_generations_.find(index);
+
   return it != active_generations_.end() && it->second == id.GetGeneration();
 }
 

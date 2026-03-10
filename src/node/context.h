@@ -17,7 +17,7 @@ class Context {
 
   void SendLocal(Message msg);
 
-  void SetTimer(const std::string& timer_name, SimulationClock duration);
+  void SetTimer(const TTimerName& timer_name, SimulationClock duration);
 
   void ScheduleEvent(const Event& event);
 
