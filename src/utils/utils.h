@@ -15,4 +15,40 @@ using TCommand = std::string;
 
 using SimulationClock = float;
 
+template <typename T>
+concept Serializable =
+  (std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>) ||
+  requires(const T& v, Bytes& buf) {
+    { v.Serialize(buf) } -> std::same_as<void>;
+};
+
+template <typename T>
+void append_item(Bytes& buffer, const T& value) {
+  using TClear = std::remove_cvref_t<T>;
+
+  if constexpr (std::is_trivially_copyable_v<TClear>) {
+    size_t old = buffer.size();
+    buffer.resize(old + sizeof(TClear));
+
+    std::memcpy(buffer.data() + old, &value, sizeof(TClear));
+
+  } else {
+    value.Serialize(buffer);
+  }
+}
+
+template <typename... Args>
+void append(Bytes& buffer, const Args&... args) {
+  (append_item(buffer, args), ...);
+}
+
+template <Serializable... Args>
+Bytes BuildPayload(Args... args) {
+  Bytes res_buffer;
+  
+  append(res_buffer, args...);
+
+  return res_buffer;
+}
+
 }  // namespace distsysenv
