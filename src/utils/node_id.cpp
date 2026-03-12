@@ -30,10 +30,10 @@ NodeID::Hash NodeID::GetHash() const {
   return Hash{static_cast<uint64_t>(index) << 32u | generation};
 }
 
-NodeID NodeID::DecodeFromBytes(const Bytes& buffer, TOffset offset) {
+NodeID NodeID::Deserialize(const Bytes& buffer, TOffset offset) {
   assert(offset >= 0 &&
          static_cast<size_t>(offset) + EncodedSize() <= buffer.size() &&
-         "NodeID::DecodeFromBytes buffer overflow");
+         "NodeID::Deserialize buffer overflow");
 
   Index index;
   Generation gen;
@@ -44,10 +44,14 @@ NodeID NodeID::DecodeFromBytes(const Bytes& buffer, TOffset offset) {
   return NodeID{index, gen};
 }
 
-void NodeID::StoreToBuffer(Bytes& buffer, TOffset offset) const {
-  assert(offset >= 0 &&
-         static_cast<size_t>(offset) + EncodedSize() <= buffer.size() &&
-         "NodeID::StoreToBuffer buffer overflow");
+void NodeID::Serialize(Bytes& buffer, TOffset offset) const {
+  assert(offset >= 0 && "NodeID::Serialize negative offset");
+
+  const size_t need = static_cast<size_t>(offset) + EncodedSize();
+
+  if (buffer.size() < need) {
+    buffer.resize(need);
+  }
 
   const Index index = index_;
   const Generation gen = generation_;
