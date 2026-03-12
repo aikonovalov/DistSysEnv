@@ -10,6 +10,8 @@ using Bytes = std::vector<Byte>;
 
 using TOffset = int64_t;
 using TTimerName = std::string;
+using TIndex = int64_t;
+using TCommand = std::string;
 
 using SimulationClock = float;
 

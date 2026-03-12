@@ -50,7 +50,7 @@ struct CheckerMessagePayload {
 
 struct TimerPayload {
   NodeID node_id;
-  std::string timer_name;
+  TTimerName timer_name;
 };
 
 struct NodeFailPayload {

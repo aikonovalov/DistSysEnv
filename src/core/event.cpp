@@ -39,7 +39,7 @@ Event Event::CheckerMessage(SimulationClock at, NodeID checker_id,
 }
 
 Event Event::Timer(SimulationClock at, NodeID node_id,
-                   const std::string& timer_name) {
+                   const TTimerName& timer_name) {
   return Event(EEventType::kTIMER, node_id, at,
                TimerPayload{node_id, timer_name});
 }

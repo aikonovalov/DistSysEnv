@@ -33,7 +33,7 @@ class KVStore {
     if (it == storage_.end()) {
       return Status::Error;
     }
-    
+
     storage_.erase(it);
     return Status::Ok;
   }

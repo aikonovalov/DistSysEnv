@@ -15,7 +15,7 @@ Message Message::FromDescription(MessageType type, Bytes payload) {
 Bytes Message::Serialize() const {
   Bytes buffer(sizeof(LengthEncoding) + type_.size() + sizeof(LengthEncoding) +
                payload_.size());
-  int64_t offset = 0;
+  TOffset offset = 0;
 
   const LengthEncoding type_size = static_cast<LengthEncoding>(type_.size());
   std::memcpy(buffer.data() + offset, &type_size, sizeof(LengthEncoding));
@@ -32,13 +32,13 @@ Bytes Message::Serialize() const {
   return buffer;
 }
 
-Message Message::FromBytes(const Bytes& serialized_message) {
+Message Message::Deserialize(const Bytes& serialized_message) {
   if (serialized_message.size() <
       sizeof(LengthEncoding) + sizeof(LengthEncoding)) {
     throw std::runtime_error("Invalid serialized view of message: too short");
   }
 
-  int64_t current_offset = 0;
+  TOffset current_offset = 0;
 
   LengthEncoding type_size;
   std::memcpy(&type_size, serialized_message.data() + current_offset,
