@@ -1,19 +1,36 @@
 #pragma once
 
+#include <cstring>
 #include <memory>
+#include <ranges>
+#include <type_traits>
 #include <vector>
+
+#include "bytes.h"
 
 namespace distsysenv {
 
-using Byte = std::byte;
-using Bytes = std::vector<Byte>;
-
 using TOffset = int64_t;
-using TTimerName = std::string;
 using TIndex = int64_t;
-using TCommand = std::string;
 
-using SimulationClock = float;
+enum class Status {
+  OK,
+  ERROR,
+};
+
+namespace utils {
+
+template <typename T>
+using TClearCVRef = std::remove_cvref_t<T>;
+
+}
+
+template <typename T>
+concept SerializableContainer = std::ranges::range<utils::TClearCVRef<T>> &&
+                                requires(const utils::TClearCVRef<T>& c) {
+                                  typename utils::TClearCVRef<T>::value_type;
+                                  { c.size() } -> std::convertible_to<size_t>;
+                                };
 
 template <typename T>
 concept Serializable =
@@ -22,28 +39,35 @@ concept Serializable =
       { v.Serialize() } -> std::same_as<Bytes>;
     } || requires(const T& v, Bytes& buf, TOffset offset) {
       { v.Serialize(buf, offset) } -> std::same_as<void>;
-    };
+    } || SerializableContainer<T>;
 
 template <typename T>
 void append_item(Bytes& buffer, const T& value) {
-  using TClear = std::remove_cvref_t<T>;
+  using TClearCVRef = utils::TClearCVRef<T>;
 
-  if constexpr (std::is_trivially_copyable_v<TClear>) {
+  if constexpr (std::is_trivially_copyable_v<TClearCVRef>) {
     size_t old = buffer.size();
-    buffer.resize(old + sizeof(TClear));
+    buffer.resize(old + sizeof(TClearCVRef));
 
-    std::memcpy(buffer.data() + old, &value, sizeof(TClear));
+    std::memcpy(buffer.data() + old, &value, sizeof(TClearCVRef));
 
-  } else if constexpr (requires(const TClear& v) {
+  } else if constexpr (requires(const TClearCVRef& v) {
                          { v.Serialize() } -> std::same_as<Bytes>;
                        }) {
     Bytes tmp = value.Serialize();
     buffer.insert(buffer.end(), tmp.begin(), tmp.end());
 
-  } else if constexpr (requires(const TClear& v, Bytes& buf, TOffset off) {
+  } else if constexpr (requires(const TClearCVRef& v, Bytes& buf, TOffset off) {
                          { v.Serialize(buf, off) } -> std::same_as<void>;
                        }) {
     value.Serialize(buffer, buffer.size());
+  } else if constexpr (SerializableContainer<TClearCVRef>) {
+    size_t size = value.size();
+    append_item(buffer, size);
+
+    for (const auto& elem : value) {
+      append_item(buffer, elem);
+    }
   }
 }
 
@@ -59,6 +83,33 @@ Bytes BuildPayload(Args... args) {
   append(res_buffer, args...);
 
   return res_buffer;
+}
+
+template <typename T>
+void read_field(const Bytes& buffer, TOffset& offset, T& out) {
+  if constexpr (std::is_trivially_copyable_v<T>) {
+    std::memcpy(&out, buffer.data() + offset, sizeof(T));
+    offset += sizeof(T);
+
+  } else if constexpr (requires(const Bytes& b) {
+                         utils::TClearCVRef<T>::Deserialize(b);
+                       }) {
+    Bytes tail(buffer.begin() + offset, buffer.end());
+    out = utils::TClearCVRef<T>::Deserialize(tail);
+    offset = buffer.size();
+
+  } else if constexpr (SerializableContainer<T>) {
+    size_t size;
+    read_field(buffer, offset, size);
+    out.resize(size);
+
+    for (size_t i = 0; i < size; ++i) {
+      read_field(buffer, offset, out[i]);
+    }
+
+  } else {
+    throw std::runtime_error("Unsupported type for read_field");
+  }
 }
 
 }  // namespace distsysenv

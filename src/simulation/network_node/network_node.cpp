@@ -1,4 +1,4 @@
-#include "network.h"
+#include "network_node.h"
 #include <cassert>
 #include <random>
 #include "../core/event.h"
@@ -31,16 +31,16 @@ void Network::HandleEvent(const Event& event, Context& ctx) {
 void Network::HandleMessageSend(NodeID from, NodeID to, const Message& msg,
                                 Context& ctx) {
   if (ShouldDrop(from, to)) {
-    ctx.ScheduleEvent(Event::MessageDropped(ctx.Now(), from, to, msg));
+    ctx.PushEvent(Event::MessageDropped(ctx.Now(), from, to, msg));
 
     return;
   }
 
-  SimulationClock delay = RandomDelay();
+  TTime delay = RandomDelay();
 
   assert(delay > 0 && "Delay must be positive");
 
-  ctx.ScheduleEvent(Event::MessageReceive(ctx.Now() + delay, from, to, msg));
+  ctx.PushEvent(Event::MessageReceive(ctx.Now() + delay, from, to, msg));
 }
 
 bool Network::ShouldDrop(NodeID from, NodeID to) {
@@ -64,9 +64,9 @@ bool Network::ShouldDrop(NodeID from, NodeID to) {
   return dist(rng_) < settings_.drop_prob;
 }
 
-SimulationClock Network::RandomDelay() {
-  std::uniform_real_distribution<SimulationClock> delay_distribution(
-      settings_.min_delay, settings_.max_delay);
+TTime Network::RandomDelay() {
+  std::uniform_real_distribution<TTime> delay_distribution(settings_.min_delay,
+                                                           settings_.max_delay);
 
   return delay_distribution(rng_);
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils.h"
+#include "../../utils/utils.h"
 
 #include <concepts>
 #include <type_traits>
@@ -11,18 +11,16 @@ using MessageType = std::string;
 
 class Message {
  private:
-  using LengthEncoding = int64_t;
-
   Message(MessageType&& type, Bytes&& payload);
 
  public:
   static Message FromDescription(MessageType type, Bytes payload);
   static Message Deserialize(const Bytes& serialized_message);
 
+  Bytes Serialize() const;
+
   const MessageType& GetType() const;
   const Bytes& GetPayload() const;
-
-  Bytes Serialize() const;
 
  private:
   MessageType type_;

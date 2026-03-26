@@ -2,32 +2,22 @@ cmake_minimum_required(VERSION 3.14)
 project(DistSysEnv LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_library(distsysenv
-  src/utils/utils.h
-  src/utils/message.cpp
-  src/utils/message.h
-  src/utils/node_id.cpp
-  src/utils/node_id.h
-  src/utils/node_id_manager.cpp
-  src/utils/node_id_manager.h
-  src/core/event.cpp
-  src/core/event.h
-  src/core/event_manager.cpp
-  src/core/event_manager.h
-  src/logger/logger.cpp
-  src/logger/logger.h
-  src/node/node.h
-  src/node/context.cpp
-  src/node/context.h
-  src/network/network.cpp
-  src/network/network.h
-  src/network/network_settings.h
-)
-target_include_directories(distsysenv PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+find_package(Catch2 REQUIRED)
 
-add_executable(main_example
-  examples/main_example.cpp
+add_library(distsysenv_core
+  src/core/context/context.cpp
+  src/core/message/message.cpp
+  src/core/node_id/node_id.cpp
+  src/core/node_id/node_id_manager.cpp
+  src/core/event/event.cpp
+  src/core/event/event_manager.cpp
 )
-target_link_libraries(main_example PRIVATE distsysenv)
-target_include_directories(main_example PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(distsysenv_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_executable(test_core
+  tests/test_core.cpp
+)
+target_link_libraries(test_core PRIVATE distsysenv_core Catch2::Catch2WithMain)
+target_include_directories(test_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

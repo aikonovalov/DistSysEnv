@@ -1,15 +1,15 @@
 #pragma once
 
 #include <unordered_set>
-#include "../utils/node_id.h"
-#include "../utils/utils.h"
+#include "../core/node_id/node_id.h"
+#include "../utils/time.h"
 
 namespace distsysenv {
 
 struct NetworkSettings {
   float drop_prob = 0.0f;
-  SimulationClock min_delay = 1;
-  SimulationClock max_delay = 10;
+  TTime min_delay = 1;
+  TTime max_delay = 10;
 };
 
 struct NodeNetworkSettings {

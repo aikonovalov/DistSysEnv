@@ -1,11 +1,62 @@
 #pragma once
 
+#include <cstdint>
+#include <cstring>
 #include <map>
 #include <optional>
+#include <string>
+#include "../src/utils/utils.h"
 
 #include "sizer.h"
 
 namespace distsysenv {
+
+template <Serializable TKey, Serializable TVal>
+class Command {
+ public:
+  enum class Type : uint8_t {
+    eGET,
+    eSET,
+    eDEL,
+  };
+
+  Command() = default;
+
+  Command(Type type, TKey key, std::optional<TVal> value)
+      : type_(type), key_(key), value_(value) {}
+
+  Bytes Serialize() const {
+    Bytes buffer;
+    append_item(buffer, type_);
+
+    append_item(buffer, key_);
+
+    if (type_ == Type::eSET) {
+      append_item(buffer, value_);
+    }
+
+    return buffer;
+  }
+
+  static Command Deserialize(const Bytes& bytes) {
+    Command cmd;
+
+    TOffset offset = 0;
+
+    read_field(bytes, offset, cmd.type_);
+    read_field(bytes, offset, cmd.key_);
+    if (cmd.type_ == Type::eSET) {
+      read_field(bytes, offset, cmd.value_);
+    }
+
+    return cmd;
+  }
+
+ private:
+  Type type_;
+  TKey key_;
+  std::optional<TVal> value_;
+};
 
 template <typename TKey, typename TVal>
 class KVStore {
@@ -22,7 +73,6 @@ class KVStore {
     return it->second;
   }
 
-  enum class Status { Ok, Error };
   Status Set(const TKey& key, const TVal& val) {
     storage_[key] = val;
     return Status::Ok;
