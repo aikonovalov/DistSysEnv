@@ -1,28 +1,33 @@
 #pragma once
 
-#include <random>
+#include <cstdint>
 #include <unordered_map>
-#include "../core/message/message.h"
-#include "../core/node_id/node_id.h"
-#include "../utils/time.h"
+
+#include "../../core/event/event_handler.h"
+#include "../../utils/time.h"
+#include "../event/event.h"
 #include "network_settings.h"
+#include "../../utils/random.h"
 
 namespace distsysenv {
 
-class Event;
-class Context;
+class CoreContext;
+struct Event;
 
 class Network {
  public:
-  Network(const NetworkSettings& settings, uint64_t rng_seed);
+  struct Config {
+    NetworkSettings behavior{};
+    RandomSeed random_seed{};
+  };
 
-  void Event(const Event& event, Context& ctx);
+  explicit Network(Config config);
+
+  void OnEvent(const Event& event, CoreContext& ctx);
 
  private:
-  void HandleMessageSend(NodeID from, NodeID to, const Message& msg,
-                         Context& ctx);
-  void HandleNodeFail(NodeID node_id);
-  void HandleNodeRecover(NodeID node_id);
+  void HandleSend(NodeID from, NodeID to, const Message& msg, CoreContext& ctx);
+  void SetNodeStatus(NodeStatusEventPayload::Status status, NodeID node_id);
 
   bool ShouldDrop(NodeID from, NodeID to);
 
@@ -31,7 +36,9 @@ class Network {
   std::unordered_map<NodeID, NodeNetworkSettings> node_settings_;
 
   NetworkSettings settings_;
-  std::mt19937 rng_;
+  Random rng_;
 };
+
+EventHandler MakeNetworkHandler(Network::Config config);
 
 }  // namespace distsysenv

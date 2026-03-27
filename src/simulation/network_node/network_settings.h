@@ -1,8 +1,8 @@
 #pragma once
 
 #include <unordered_set>
-#include "../core/node_id/node_id.h"
-#include "../utils/time.h"
+#include "../../core/node_id/node_id.h"
+#include "../../utils/time.h"
 
 namespace distsysenv {
 
@@ -13,7 +13,10 @@ struct NetworkSettings {
 };
 
 struct NodeNetworkSettings {
-  bool is_failed = false;
+  enum Status : uint8_t {
+    OK = 0,
+    FAIL = 1,
+  } is_failed = Status::OK;
   std::unordered_set<NodeID> partitioned_from;
 };
 

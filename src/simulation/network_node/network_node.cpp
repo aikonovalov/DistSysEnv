@@ -1,52 +1,86 @@
 #include "network_node.h"
-#include <cassert>
-#include <random>
-#include "../core/event.h"
-#include "../node/context.h"
-#include "network_settings.h"
+
+#include <algorithm>
+
+#include "../../core/context/context.h"
 
 namespace distsysenv {
 
-Network::Network(const NetworkSettings& settings, uint64_t seed)
-    : settings_(settings), rng_(seed) {}
+Network::Network(Config config)
+    : settings_(std::move(config.behavior)), rng_(config.random_seed) {}
 
-void Network::HandleEvent(const Event& event, Context& ctx) {
-  if (event.GetType() == EEventType::kMESSAGE_SEND) {
-    const auto& payload = std::get<MessageSendPayload>(event.GetPayload());
-
-    HandleMessageSend(payload.from_id, payload.to_id, payload.msg, ctx);
-
-  } else if (event.GetType() == EEventType::kNODE_FAIL) {
-    const auto& payload = std::get<NodeFailPayload>(event.GetPayload());
-
-    HandleNodeFail(payload.node_id);
-
-  } else if (event.GetType() == EEventType::kNODE_RECOVER) {
-    const auto& payload = std::get<NodeRecoverPayload>(event.GetPayload());
-
-    HandleNodeRecover(payload.node_id);
-  }
-}
-
-void Network::HandleMessageSend(NodeID from, NodeID to, const Message& msg,
-                                Context& ctx) {
-  if (ShouldDrop(from, to)) {
-    ctx.PushEvent(Event::MessageDropped(ctx.Now(), from, to, msg));
-
+void Network::OnEvent(const Event& event, CoreContext& ctx) {
+  SimulationEventKind kind{};
+  if (ClassifySimulationEvent(event, &kind) != Status::OK) {
     return;
   }
 
-  TTime delay = RandomDelay();
+  if (kind == SimulationEventKind::NodeStatus) {
+    DecodedNodeStatusEvent dec{
+        NodeStatusEventPayload::Status::Normal,
+        NodeID(Index{0}, Generation{0}),
+    };
 
-  assert(delay > 0 && "Delay must be positive");
+    if (TryDecodeNodeStatusEvent(event, &dec) != Status::OK) {
+      return;
+    }
 
-  ctx.PushEvent(Event::MessageReceive(ctx.Now() + delay, from, to, msg));
+    SetNodeStatus(dec.status, dec.node_id);
+    
+    return;
+  }
+
+  if (kind != SimulationEventKind::Message) {
+    return;
+  }
+
+  DecodedMessageEvent dec{
+      MessageDeliveryStatus::Sended,
+      NodeID(Index{0}, Generation{0}),
+      NodeID(Index{0}, Generation{0}),
+      Message::FromDescription("_", {}),
+  };
+
+  if (TryDecodeMessageEvent(event, &dec) != Status::OK) {
+    return;
+  }
+
+  if (dec.status != MessageDeliveryStatus::Sended) {
+    return;
+  }
+
+  HandleSend(dec.from, dec.to, dec.msg, ctx);
+}
+
+void Network::HandleSend(NodeID from, NodeID to, const Message& msg,
+                         CoreContext& ctx) {
+  if (ShouldDrop(from, to)) {
+    ctx.PushEvent(MakeFailedDeliveryToSenderEvent(ctx.Now(), from, to, msg));
+    return;
+  }
+
+  const TTime delay = std::max(RandomDelay(), TTime{0});
+  const TTime arrive = ctx.Now() + delay;
+  MessageEventPayload payload{MessageDeliveryStatus::Received, from, to, msg};
+  ctx.PushEvent(
+      SimulationEvent::make<MessageEventPayload>::Of(arrive, std::move(payload)));
+}
+
+void Network::SetNodeStatus(NodeStatusEventPayload::Status status,
+                            NodeID node_id) {
+  if (status == NodeStatusEventPayload::Status::Fail) {
+    node_settings_[node_id].is_failed = NodeNetworkSettings::Status::FAIL;
+
+  } else {
+    node_settings_[node_id].is_failed = NodeNetworkSettings::Status::OK;
+
+  }
 }
 
 bool Network::ShouldDrop(NodeID from, NodeID to) {
   NodeNetworkSettings& curr_settings = node_settings_[to];
 
-  if (curr_settings.is_failed ||
+  if (curr_settings.is_failed == NodeNetworkSettings::Status::FAIL ||
       curr_settings.partitioned_from.contains(from)) {
     return true;
   }
@@ -59,32 +93,19 @@ bool Network::ShouldDrop(NodeID from, NodeID to) {
     return true;
   }
 
-  std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-
-  return dist(rng_) < settings_.drop_prob;
+  return rng_.uniform<float>(0.0f, 1.0f) < settings_.drop_prob;
 }
 
 TTime Network::RandomDelay() {
-  std::uniform_real_distribution<TTime> delay_distribution(settings_.min_delay,
-                                                           settings_.max_delay);
-
-  return delay_distribution(rng_);
+  return rng_.uniform<TTime>(settings_.min_delay, settings_.max_delay);
 }
 
-void Network::HandleNodeFail(NodeID node_id) {
-  if (node_id.GetIndex() < NodeID::Index{0}) {
-    return;
-  }
+EventHandler MakeNetworkHandler(Network::Config config) {
+  auto net = std::make_shared<Network>(std::move(config));
 
-  node_settings_[node_id].is_failed = true;
-}
-
-void Network::HandleNodeRecover(NodeID node_id) {
-  if (node_id.GetIndex() < NodeID::Index{0}) {
-    return;
-  }
-
-  node_settings_[node_id].is_failed = false;
+  return [net](const Event& event, CoreContext& ctx) {
+    net->OnEvent(event, ctx);
+  };
 }
 
 }  // namespace distsysenv
