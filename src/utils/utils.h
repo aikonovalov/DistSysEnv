@@ -84,7 +84,14 @@ Bytes BuildPayload(Args... args) {
 
 template <typename T>
 void read_field(const Bytes& buffer, TOffset& offset, T& out) {
-  if constexpr (std::is_trivially_copyable_v<T>) {
+  if constexpr (requires(const Bytes& buf, TOffset& off) {
+                  {
+                    utils::TClearCVRef<T>::Deserialize(buf, off)
+                  } -> std::same_as<utils::TClearCVRef<T>>;
+                }) {
+    out = utils::TClearCVRef<T>::Deserialize(buffer, offset);
+
+  } else if constexpr (std::is_trivially_copyable_v<T>) {
     std::memcpy(&out, buffer.data() + offset, sizeof(T));
     offset += sizeof(T);
 
