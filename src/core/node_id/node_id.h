@@ -27,7 +27,7 @@ class NodeID {
   Index index() const;
   Generation generation() const;
 
-  static NodeID Deserialize(const Bytes& buffer, TOffset offset);
+  static NodeID Deserialize(const Bytes& buffer, TOffset& offset);
   void Serialize(Bytes& buffer, TOffset offset) const;
 
   uint64_t GetHash() const;
@@ -36,11 +36,11 @@ class NodeID {
   friend bool operator!=(NodeID a, NodeID b);
   friend bool operator<(NodeID a, NodeID b);
 
- private:
   static constexpr TOffset EncodedSize() {
     return sizeof(Index) + sizeof(Generation);
   }
 
+ private:
   Index_t index_;
   Generation_t generation_;
 };

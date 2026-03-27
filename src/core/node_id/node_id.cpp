@@ -18,7 +18,7 @@ Generation NodeID::generation() const {
   return Generation{generation_};
 }
 
-NodeID NodeID::Deserialize(const Bytes& buffer, TOffset offset) {
+NodeID NodeID::Deserialize(const Bytes& buffer, TOffset& offset) {
   Index_t index;
   read_field(buffer, offset, index);
 
