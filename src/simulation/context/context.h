@@ -16,8 +16,9 @@ struct SimulationContextOptions {
 
 class SimulationContext {
  public:
+  /// Ссылка должна жить дольше использования `SimulationContext` (обычно весь вызов обработчика).
   explicit SimulationContext(CoreContext& core,
-                             SimulationContextOptions options = {});
+                             const SimulationContextOptions& options);
 
   TTime Now() const;
   NodeID GetOwnID() const;
@@ -36,7 +37,7 @@ class SimulationContext {
   void PushApplicationMessage(NodeID to, const Message& msg);
 
   CoreContext& core_;
-  SimulationContextOptions options_;
+  const SimulationContextOptions& options_;
 };
 
 }  // namespace distsysenv

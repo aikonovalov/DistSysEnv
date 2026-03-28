@@ -5,8 +5,8 @@
 namespace distsysenv {
 
 SimulationContext::SimulationContext(CoreContext& core,
-                                     SimulationContextOptions options)
-    : core_(core), options_(std::move(options)) {}
+                                     const SimulationContextOptions& options)
+    : core_(core), options_(options) {}
 
 TTime SimulationContext::Now() const {
   return core_.Now();
