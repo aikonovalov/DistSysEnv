@@ -1,80 +1,88 @@
-#include "../src/core/event.h"
-#include "../src/core/event_manager.h"
-#include "../src/logger/logger.h"
-#include "../src/network/network.h"
-#include "../src/network/network_settings.h"
-#include "../src/node/context.h"
-#include "../src/utils/message.h"
-
 #include <iostream>
+#include "src/core/message/message.h"
+#include "src/core/node_id/node_id.h"
+#include "src/simulation/event/event.h"
+#include "src/simulation/scenario/scenario.h"
+#include "src/utils/random.h"
 
 namespace distsysenv {
+
+namespace {
 
 struct EchoNode {
   int msg_count = 0;
 
-  void OnMessage(NodeID from, const Message& msg, Context& ctx) {
-    msg_count++;
+  void OnSimulationEvent(const Event& e, SimulationContext& ctx) {
+    DecodedMessageEvent dec{
+        MessageDeliveryStatus::Sended,
+        NodeID(Index{0}, Generation{0}),
+        NodeID(Index{0}, Generation{0}),
+        Message::FromDescription("_", {}),
+    };
+
+    if (TryDecodeMessageEvent(e, &dec) != Status::OK ||
+        dec.status != MessageDeliveryStatus::Received) {
+      return;
+    }
+
+    if (dec.msg.GetType() != "hello") {
+      return;
+    }
+
+    ++msg_count;
 
     ctx.SendLocal(Message::FromDescription("update", {}));
-
-    ctx.Send(from, Message::FromDescription("echo_reply", {}));
-  }
-
-  void OnLocalMessage(const Message& msg, Context& ctx) {
-    (void)msg;
-    (void)ctx;
-  }
-
-  void OnTimer(const std::string& timer_name, Context& ctx) {
-    (void)timer_name;
-    (void)ctx;
+    ctx.SendMessage(dec.from, Message::FromDescription("echo_reply", {}));
   }
 };
 
 struct InvariantChecker {
   int state_updates = 0;
 
-  void OnLocalMessage(const Message& msg, Context& ctx) {
-    if (msg.GetType() == "update") {
-      state_updates++;
+  void OnSimulationEvent(const Event& e, SimulationContext& ctx) {
+    DecodedLocalMessageEvent dec{
+        NodeID(Index{0}, Generation{0}),
+        Message::FromDescription("_", {}),
+    };
 
-      std::cout << "[CHECKER] Upd" << state_updates << " " << ctx.Now()
-                << std::endl;
+    if (TryDecodeLocalMessageEvent(e, &dec) != Status::OK) {
+      return;
     }
+
+    if (dec.msg.GetType() != "update") {
+      return;
+    }
+
+    ++state_updates;
+
+    std::cout << "[CHECKER] Upd" << state_updates << " " << ctx.Now() << '\n';
   }
 };
 
+}  // namespace
+
 void RunExample() {
-  EventManager manager;
-
-  Logger logger = Logger::WithDefaultHandlers();
-  manager.SetLogger(std::move(logger));
-
   NetworkSettings net_settings{
-      .drop_prob = 0.0f, .min_delay = 1, .max_delay = 5};
-  Network network(net_settings, 42);
-  manager.RegisterNetwork(std::move(network));
+      .drop_prob = 0.0f,
+      .min_delay = 1.0f,
+      .max_delay = 5.0f,
+  };
 
-  InvariantChecker checker;
-  manager.RegisterChecker(std::move(checker));
+  SimulationScenario sim(Network::Config{.behavior = net_settings,
+                                         .random_seed = MakeRandomSeed(42)});
 
-  EchoNode node_a;
-  NodeID a = manager.RegisterNode(std::move(node_a));
+  sim.AddNode(InvariantChecker{}, NodeTag::kCHECKER);
 
-  EchoNode node_b;
-  NodeID b = manager.RegisterNode(std::move(node_b));
+  const NodeID a = sim.AddNode(EchoNode{});
+  const NodeID b = sim.AddNode(EchoNode{});
 
-  manager.Schedule(
-      Event::MessageSend(0, a, b, Message::FromDescription("hello", {})));
+  sim.ScheduleMessage(0.0f, a, b, Message::FromDescription("hello", {}));
+  sim.ScheduleLocalMessage(0.001f, b, a,
+                           Message::FromDescription("local_message", {}));
+  sim.ScheduleNodeFail(10.0f, b, a);
+  sim.ScheduleNodeRecover(30.0f, b, a);
 
-  manager.SendLocal(b, Message::FromDescription("local_message", {}));
-
-  manager.Schedule(Event::NodeFail(10, b));
-
-  manager.Schedule(Event::NodeRecover(30, b));
-
-  manager.ProcessUntil(50);
+  sim.RunUntil(50.0f);
 
   std::cout << "Done" << std::endl;
 }
