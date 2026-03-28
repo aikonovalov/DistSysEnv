@@ -56,7 +56,6 @@ TEST_CASE("NodeID generation and management", "[node_id]") {
     REQUIRE(id1 != id2);
     REQUIRE(id2 != id3);
     REQUIRE(id1 != id3);
-
   }
 
   SECTION("Reuse released ID with incremented generation") {
@@ -91,7 +90,8 @@ TEST_CASE("NodeID serialization", "[node_id][serialization]") {
 
   REQUIRE(buffer.size() == 8);
 
-  NodeID restored = NodeID::Deserialize(buffer, 0);
+  TOffset off = 0;
+  NodeID restored = NodeID::Deserialize(buffer, off);
 
   REQUIRE(restored == original);
   REQUIRE(restored.index() == original.index());
@@ -114,8 +114,7 @@ TEST_CASE("Message serialization and deserialization",
 
   SECTION("Message with complex payload") {
     Bytes payload = BuildPayload(42, 3.14f, std::string("GOOOOOOOOOOOOOOOOL"));
-    Message msg =
-        Message::FromDescription("GOOOL", std::move(payload));
+    Message msg = Message::FromDescription("GOOOL", std::move(payload));
 
     Bytes serialized = msg.Serialize();
 
@@ -143,8 +142,8 @@ TEST_CASE("Event Manager basic functionality", "[event_manager]") {
     CounterNode node_a;
     CounterNode node_b;
 
-    NodeID id_a = manager.RegisterNode(MakeNodeHandler(std::move(node_a)));
-    NodeID id_b = manager.RegisterNode(MakeNodeHandler(std::move(node_b)));
+    NodeID id_a = manager.AddNode(MakeNodeHandler(std::move(node_a)));
+    NodeID id_b = manager.AddNode(MakeNodeHandler(std::move(node_b)));
 
     REQUIRE(id_a != id_b);
 
@@ -161,7 +160,7 @@ TEST_CASE("Event Manager basic functionality", "[event_manager]") {
 TEST_CASE("Event ordering by timestamp", "[event_manager][ordering]") {
   EventManager manager;
   CounterNode node;
-  NodeID id = manager.RegisterNode(MakeNodeHandler(std::move(node)));
+  NodeID id = manager.AddNode(MakeNodeHandler(std::move(node)));
 
   Message msg1 = Message::FromDescription("msg_at_10", {});
   manager.PushEvent({id, id, 10.0f, msg1.Serialize()});
@@ -185,8 +184,8 @@ TEST_CASE("Echo pattern - ping-pong communication",
   EchoNode node_1;
   EchoNode node_2;
 
-  NodeID id_1 = manager.RegisterNode(MakeNodeHandler(std::move(node_1)));
-  NodeID id_2 = manager.RegisterNode(MakeNodeHandler(std::move(node_2)));
+  NodeID id_1 = manager.AddNode(MakeNodeHandler(std::move(node_1)));
+  NodeID id_2 = manager.AddNode(MakeNodeHandler(std::move(node_2)));
 
   Message initial = Message::FromDescription("ping", {});
   Bytes data = initial.Serialize();
@@ -224,7 +223,7 @@ TEST_CASE("NodeID comparison operators", "[node_id]") {
 TEST_CASE("CoreContext basic operations", "[context]") {
   EventManager manager;
   CounterNode node;
-  NodeID id = manager.RegisterNode(MakeNodeHandler(std::move(node)));
+  NodeID id = manager.AddNode(MakeNodeHandler(std::move(node)));
 
   Message msg = Message::FromDescription("test", {});
   Event e{id, id, 5.0f, msg.Serialize()};
