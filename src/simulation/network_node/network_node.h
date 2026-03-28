@@ -4,10 +4,10 @@
 #include <unordered_map>
 
 #include "../../core/event/event_handler.h"
+#include "../../utils/random.h"
 #include "../../utils/time.h"
 #include "../event/event.h"
 #include "network_settings.h"
-#include "../../utils/random.h"
 
 namespace distsysenv {
 

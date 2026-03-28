@@ -84,7 +84,7 @@ class SimulationEvent {
 };
 
 Event MakeRoutedApplicationMessage(TTime ts, NodeID transport_to,
-                                    MessageEventPayload payload);
+                                   MessageEventPayload payload);
 
 struct DecodedMessageEvent {
   MessageDeliveryStatus status;
@@ -93,8 +93,8 @@ struct DecodedMessageEvent {
   Message msg;
 };
 
-Event MakeFailedDeliveryToSenderEvent(TTime ts, NodeID sender, NodeID intended_to,
-                                      const Message& msg);
+Event MakeFailedDeliveryToSenderEvent(TTime ts, NodeID sender,
+                                      NodeID intended_to, const Message& msg);
 
 struct DecodedLocalMessageEvent {
   NodeID from;
@@ -110,12 +110,14 @@ struct DecodedNodeStatusEvent {
   NodeID node_id;
 };
 
-Status ClassifySimulationEvent(const Event& event, SimulationEventKind* out_kind);
+Status ClassifySimulationEvent(const Event& event,
+                               SimulationEventKind* out_kind);
 
 Status TryDecodeMessageEvent(const Event& event, DecodedMessageEvent* out);
 Status TryDecodeLocalMessageEvent(const Event& event,
                                   DecodedLocalMessageEvent* out);
 Status TryDecodeTimerEvent(const Event& event, DecodedTimerEvent* out);
-Status TryDecodeNodeStatusEvent(const Event& event, DecodedNodeStatusEvent* out);
+Status TryDecodeNodeStatusEvent(const Event& event,
+                                DecodedNodeStatusEvent* out);
 
 }  // namespace distsysenv

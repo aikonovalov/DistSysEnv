@@ -55,7 +55,7 @@ void EventManager::ProcessUntil(TTime until) {
        curr_status = Step(exit_func)) {}
 }
 
-NodeID EventManager::RegisterNode(EventHandler handler) {
+NodeID EventManager::AddNode(EventHandler handler) {
   NodeID id = id_manager_.Generate();
   node_pool_[id] = std::move(handler);
 

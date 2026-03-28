@@ -8,17 +8,21 @@ SimulationContext::SimulationContext(CoreContext& core,
                                      SimulationContextOptions options)
     : core_(core), options_(std::move(options)) {}
 
-TTime SimulationContext::Now() const { return core_.Now(); }
+TTime SimulationContext::Now() const {
+  return core_.Now();
+}
 
-NodeID SimulationContext::GetOwnID() const { return core_.GetOwnID(); }
+NodeID SimulationContext::GetOwnID() const {
+  return core_.GetOwnID();
+}
 
 void SimulationContext::PushApplicationMessage(NodeID to, const Message& msg) {
   const TTime ts = core_.Now();
-  MessageEventPayload payload{MessageDeliveryStatus::Sended, core_.GetOwnID(), to,
-                              msg};
+  MessageEventPayload payload{MessageDeliveryStatus::Sended, core_.GetOwnID(),
+                              to, msg};
   if (options_.network_gateway.has_value()) {
-    core_.PushEvent(MakeRoutedApplicationMessage(
-        ts, *options_.network_gateway, std::move(payload)));
+    core_.PushEvent(MakeRoutedApplicationMessage(ts, *options_.network_gateway,
+                                                 std::move(payload)));
   } else {
     core_.PushEvent(
         SimulationEvent::make<MessageEventPayload>::Of(ts, std::move(payload)));
@@ -52,10 +56,12 @@ void SimulationContext::SendLocal(NodeID to, const Message& msg) {
 void SimulationContext::SetTimer(std::string name, TTime fire_at) {
   TimerEventPayload payload{core_.GetOwnID(), std::move(name)};
 
-  core_.PushEvent(
-      SimulationEvent::make<TimerEventPayload>::Of(fire_at, std::move(payload)));
+  core_.PushEvent(SimulationEvent::make<TimerEventPayload>::Of(
+      fire_at, std::move(payload)));
 }
 
-CoreContext& SimulationContext::Core() { return core_; }
+CoreContext& SimulationContext::Core() {
+  return core_;
+}
 
 }  // namespace distsysenv

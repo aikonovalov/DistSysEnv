@@ -26,7 +26,7 @@ void Network::OnEvent(const Event& event, CoreContext& ctx) {
     }
 
     SetNodeStatus(dec.status, dec.node_id);
-    
+
     return;
   }
 
@@ -62,8 +62,8 @@ void Network::HandleSend(NodeID from, NodeID to, const Message& msg,
   const TTime delay = std::max(RandomDelay(), TTime{0});
   const TTime arrive = ctx.Now() + delay;
   MessageEventPayload payload{MessageDeliveryStatus::Received, from, to, msg};
-  ctx.PushEvent(
-      SimulationEvent::make<MessageEventPayload>::Of(arrive, std::move(payload)));
+  ctx.PushEvent(SimulationEvent::make<MessageEventPayload>::Of(
+      arrive, std::move(payload)));
 }
 
 void Network::SetNodeStatus(NodeStatusEventPayload::Status status,
@@ -73,7 +73,6 @@ void Network::SetNodeStatus(NodeStatusEventPayload::Status status,
 
   } else {
     node_settings_[node_id].is_failed = NodeNetworkSettings::Status::OK;
-
   }
 }
 

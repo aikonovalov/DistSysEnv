@@ -26,7 +26,7 @@ class EventManager {
   void Process();
   void ProcessUntil(TTime until);
 
-  NodeID RegisterNode(EventHandler handler);
+  NodeID AddNode(EventHandler handler);
 
  private:
   TTime now_ = 0.0;

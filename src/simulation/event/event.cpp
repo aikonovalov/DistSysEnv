@@ -44,7 +44,7 @@ Event Creator<MessageEventPayload>::Of(TTime ts, MessageEventPayload payload) {
 }
 
 Event Creator<LocalMessageEventPayload>::Of(TTime ts, NodeID to,
-                                              LocalMessageEventPayload payload) {
+                                            LocalMessageEventPayload payload) {
   return Event{payload.from, to, ts, EncodeLocalMessagePayload(payload)};
 }
 
@@ -61,14 +61,13 @@ Event Creator<NodeStatusEventPayload>::Of(TTime ts, NodeID from, NodeID to,
 
 Event MakeRoutedApplicationMessage(TTime ts, NodeID transport_to,
                                    MessageEventPayload payload) {
-  return Event{payload.from, transport_to, ts,
-               EncodeMessagePayload(payload)};
+  return Event{payload.from, transport_to, ts, EncodeMessagePayload(payload)};
 }
 
-Event MakeFailedDeliveryToSenderEvent(TTime ts, NodeID sender, NodeID intended_to,
-                                      const Message& msg) {
-  MessageEventPayload payload{MessageDeliveryStatus::Failed, sender, intended_to,
-                              msg};
+Event MakeFailedDeliveryToSenderEvent(TTime ts, NodeID sender,
+                                      NodeID intended_to, const Message& msg) {
+  MessageEventPayload payload{MessageDeliveryStatus::Failed, sender,
+                              intended_to, msg};
   return Event{sender, sender, ts, EncodeMessagePayload(payload)};
 }
 
