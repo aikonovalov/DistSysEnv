@@ -16,7 +16,6 @@ struct SimulationContextOptions {
 
 class SimulationContext {
  public:
-  /// Ссылка должна жить дольше использования `SimulationContext` (обычно весь вызов обработчика).
   explicit SimulationContext(CoreContext& core,
                              const SimulationContextOptions& options);
 

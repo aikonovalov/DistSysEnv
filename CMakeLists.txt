@@ -31,8 +31,25 @@ add_executable(test_core
 add_executable(test_simulation
   tests/test_simulation.cpp
 )
-target_include_directories(test_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(test_simulation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(test_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(test_simulation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(test_core PRIVATE distsysenv_core Catch2::Catch2WithMain)
+target_link_libraries(test_simulation PRIVATE distsysenv_simulation Catch2::Catch2WithMain)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND DEFINED catch2_LIB_DIRS_RELEASE)
+  target_include_directories(test_core PRIVATE ${Catch2_INCLUDE_DIRS})
+  target_include_directories(test_simulation PRIVATE ${Catch2_INCLUDE_DIRS})
+
+  target_link_libraries(test_core PRIVATE
+    "${catch2_LIB_DIRS_RELEASE}/libCatch2.a"
+    "${catch2_LIB_DIRS_RELEASE}/libCatch2Main.a"
+  )
+  
+  target_link_libraries(test_simulation PRIVATE
+    "${catch2_LIB_DIRS_RELEASE}/libCatch2.a"
+    "${catch2_LIB_DIRS_RELEASE}/libCatch2Main.a"
+  )
+endif()
 
 add_executable(main_example
   examples/main_example.cpp
