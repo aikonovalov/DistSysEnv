@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstring>
 #include <optional>
+#include <ranges>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -24,10 +25,15 @@ namespace utils {
 template <typename T>
 using TClearCVRef = std::remove_cvref_t<T>;
 
+template <typename>
+inline constexpr bool kAlwaysFalse = false;
+
 template <typename T>
 struct IsStdOptional : std::false_type {};
+
 template <typename U>
 struct IsStdOptional<std::optional<U>> : std::true_type {};
+
 template <typename T>
 inline constexpr bool kIsStdOptionalV = IsStdOptional<TClearCVRef<T>>::value;
 
@@ -41,27 +47,39 @@ concept SerializableContainer = std::ranges::range<utils::TClearCVRef<T>> &&
                                 };
 
 template <typename T>
-concept Serializable =
-    (std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>) ||
-    requires(const T& v) {
-      { v.Serialize() } -> std::same_as<Bytes>;
-    } || requires(const T& v, Bytes& buf, TOffset offset) {
-      { v.Serialize(buf, offset) } -> std::same_as<void>;
-    } || SerializableContainer<T>;
+concept Serializable = []() {
+  using U = utils::TClearCVRef<T>;
+
+  if constexpr (std::is_trivially_copyable_v<U> && !std::is_pointer_v<U>) {
+    return true;
+
+  } else if constexpr (requires(const U& v) {
+                         { v.Serialize() } -> std::same_as<Bytes>;
+                       }) {
+    return true;
+
+  } else if constexpr (requires(const U& v, Bytes& buf, TOffset offset) {
+                         { v.Serialize(buf, offset) } -> std::same_as<void>;
+                       }) {
+    return true;
+
+  } else if constexpr (SerializableContainer<T>) {
+    return true;
+
+  } else if constexpr (utils::kIsStdOptionalV<T>) {
+    return SerializableImpl<typename U::value_type>();
+  }
+
+  return false;
+}();
 
 template <typename T>
 void append_item(Bytes& buffer, const T& value) {
   using TClearCVRef = utils::TClearCVRef<T>;
 
-  if constexpr (std::is_trivially_copyable_v<TClearCVRef>) {
-    size_t old = buffer.size();
-    buffer.resize(old + sizeof(TClearCVRef));
-
-    std::memcpy(buffer.data() + old, &value, sizeof(TClearCVRef));
-
-  } else if constexpr (requires(const TClearCVRef& v) {
-                         { v.Serialize() } -> std::same_as<Bytes>;
-                       }) {
+  if constexpr (requires(const TClearCVRef& v) {
+                  { v.Serialize() } -> std::same_as<Bytes>;
+                }) {
     Bytes tmp = value.Serialize();
     buffer.insert(buffer.end(), tmp.begin(), tmp.end());
 
@@ -69,6 +87,7 @@ void append_item(Bytes& buffer, const T& value) {
                          { v.Serialize(buf, off) } -> std::same_as<void>;
                        }) {
     value.Serialize(buffer, buffer.size());
+
   } else if constexpr (utils::kIsStdOptionalV<T>) {
     const uint8_t has_value = value.has_value() ? 1 : 0;
     append_item(buffer, has_value);
@@ -77,6 +96,13 @@ void append_item(Bytes& buffer, const T& value) {
       append_item(buffer, *value);
     }
 
+  } else if constexpr (std::is_trivially_copyable_v<TClearCVRef> &&
+                       !std::is_pointer_v<TClearCVRef>) {
+    size_t old = buffer.size();
+    buffer.resize(old + sizeof(TClearCVRef));
+
+    std::memcpy(buffer.data() + old, &value, sizeof(TClearCVRef));
+
   } else if constexpr (SerializableContainer<TClearCVRef>) {
     size_t size = value.size();
     append_item(buffer, size);
@@ -84,6 +110,9 @@ void append_item(Bytes& buffer, const T& value) {
     for (const auto& elem : value) {
       append_item(buffer, elem);
     }
+
+  } else {
+    static_assert(utils::kAlwaysFalse<TClearCVRef>, "type not supported");
   }
 }
 
@@ -110,27 +139,13 @@ void read_field(const Bytes& buffer, TOffset& offset, T& out) {
                 }) {
     out = utils::TClearCVRef<T>::Deserialize(buffer, offset);
 
-  } else if constexpr (std::is_trivially_copyable_v<T>) {
-    std::memcpy(&out, buffer.data() + offset, sizeof(T));
-    offset += sizeof(T);
-
-  } else if constexpr (requires(const Bytes& b) {
-                         utils::TClearCVRef<T>::Deserialize(b);
-                       }) {
-    Bytes tail(buffer.begin() + offset, buffer.end());
-    out = utils::TClearCVRef<T>::Deserialize(tail);
-    offset = buffer.size();
-
   } else if constexpr (utils::kIsStdOptionalV<T>) {
     using U = typename utils::TClearCVRef<T>::value_type;
 
     uint8_t has_value{};
     read_field(buffer, offset, has_value);
 
-    if (has_value == 0) {
-      out = std::nullopt;
-
-    } else if (has_value == 1) {
+    if (has_value == 1) {
       if constexpr (requires(const Bytes& buf, TOffset& off) {
                       { U::Deserialize(buf, off) } -> std::same_as<U>;
                     }) {
@@ -143,9 +158,22 @@ void read_field(const Bytes& buffer, TOffset& offset, T& out) {
         out = std::move(inner);
       }
 
-    } else {
-      throw std::runtime_error("optional wire tag must be 0 or 1");
+      return;
     }
+
+    out = std::nullopt;
+
+  } else if constexpr (std::is_trivially_copyable_v<T> &&
+                       !std::is_pointer_v<T>) {
+    std::memcpy(&out, buffer.data() + offset, sizeof(T));
+    offset += sizeof(T);
+
+  } else if constexpr (requires(const Bytes& b) {
+                         utils::TClearCVRef<T>::Deserialize(b);
+                       }) {
+    Bytes tail(buffer.begin() + offset, buffer.end());
+    out = utils::TClearCVRef<T>::Deserialize(tail);
+    offset = buffer.size();
 
   } else if constexpr (SerializableContainer<T>) {
     size_t size;
