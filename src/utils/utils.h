@@ -121,8 +121,9 @@ void read_field(const Bytes& buffer, TOffset& offset, T& out) {
 template <typename... Args>
 std::tuple<Args...> ReadFields(const Bytes& buffer, TOffset& offset) {
   std::tuple<Args...> out{};
-  std::apply([&](auto&... fields) { (read_field(buffer, offset, fields), ...); }, out);
-  
+  std::apply(
+      [&](auto&... fields) { (read_field(buffer, offset, fields), ...); }, out);
+
   return out;
 }
 

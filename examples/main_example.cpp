@@ -55,7 +55,8 @@ struct InvariantChecker {
 
     ++state_updates;
 
-    std::cout << "[CHECKER] Upd" << state_updates << " " << " on time " << ctx.Now() << std::endl;
+    std::cout << "[CHECKER] Upd" << state_updates << " " << " on time "
+              << ctx.Now() << std::endl;
   }
 };
 
