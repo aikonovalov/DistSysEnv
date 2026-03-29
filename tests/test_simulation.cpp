@@ -6,8 +6,8 @@
 #include "src/core/event/event.h"
 #include "src/core/message/message.h"
 #include "src/core/node_id/node_id.h"
-#include "src/simulation/event/event.h"
 #include "src/simulation/context/context.h"
+#include "src/simulation/event/event.h"
 #include "src/simulation/scenario/scenario.h"
 #include "src/utils/random.h"
 
@@ -347,7 +347,6 @@ struct TimerResetScenarioNode {
       } else if (step == 1) {
         ctx.SetTimer("GOOOL", 50.0f);
         *wake_step = 2;
-
       }
 
       return;
@@ -399,7 +398,6 @@ struct TimerCancelOnlyNode {
       } else if (s == 1) {
         ctx.CancelTimer("GOOOL");
         *wake_step = 2;
-
       }
       return;
     }
@@ -435,7 +433,7 @@ struct TimerCancelOnlyNode {
   }
 };
 
-}
+}  // namespace
 
 TEST_CASE("Timer reschedule: stale fire ignored, latest fire handled",
           "[simulation][timer]") {

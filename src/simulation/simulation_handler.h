@@ -14,10 +14,10 @@ EventHandler MakeSimulationHandler(T node,
   auto owner = std::make_shared<T>(std::move(node));
   auto book = std::make_unique<SimulationTimerBook>();
 
-  return [owner, opts = std::move(options),
-          book = std::move(book)](const Event& event, CoreContext& core_ctx) {
+  return [owner, opts = std::move(options), book = std::move(book)](
+             const Event& event, CoreContext& core_ctx) {
     SimulationContext sim(core_ctx, opts, *book);
-    
+
     owner->OnSimulationEvent(event, sim);
   };
 }

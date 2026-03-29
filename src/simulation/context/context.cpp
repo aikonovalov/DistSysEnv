@@ -71,8 +71,8 @@ void SimulationContext::CancelTimer(const std::string& name) {
   timer_book_.Invalidate(name);
 }
 
-bool SimulationContext::IsTimerValid(
-    const std::string& name, SimulationTimerBook::Token token) const {
+bool SimulationContext::IsTimerValid(const std::string& name,
+                                     SimulationTimerBook::Token token) const {
   return timer_book_.Validate(name, token);
 }
 

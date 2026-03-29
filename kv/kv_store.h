@@ -25,6 +25,12 @@ class Command {
   Command(Type type, TKey key, std::optional<TVal> value)
       : type_(type), key_(key), value_(value) {}
 
+  Type type() const { return type_; }
+
+  TKey key() const { return key_; }
+
+  std::optional<TVal> value() const { return value_; }
+
   Bytes Serialize() const {
     Bytes buffer;
     append_item(buffer, type_);

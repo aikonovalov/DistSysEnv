@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cstdint>
 #include <cstring>
+#include <optional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -22,7 +24,14 @@ namespace utils {
 template <typename T>
 using TClearCVRef = std::remove_cvref_t<T>;
 
-}
+template <typename T>
+struct IsStdOptional : std::false_type {};
+template <typename U>
+struct IsStdOptional<std::optional<U>> : std::true_type {};
+template <typename T>
+inline constexpr bool kIsStdOptionalV = IsStdOptional<TClearCVRef<T>>::value;
+
+}  // namespace utils
 
 template <typename T>
 concept SerializableContainer = std::ranges::range<utils::TClearCVRef<T>> &&
@@ -60,6 +69,14 @@ void append_item(Bytes& buffer, const T& value) {
                          { v.Serialize(buf, off) } -> std::same_as<void>;
                        }) {
     value.Serialize(buffer, buffer.size());
+  } else if constexpr (utils::kIsStdOptionalV<T>) {
+    const uint8_t has_value = value.has_value() ? 1 : 0;
+    append_item(buffer, has_value);
+
+    if (value.has_value()) {
+      append_item(buffer, *value);
+    }
+
   } else if constexpr (SerializableContainer<TClearCVRef>) {
     size_t size = value.size();
     append_item(buffer, size);
@@ -103,6 +120,32 @@ void read_field(const Bytes& buffer, TOffset& offset, T& out) {
     Bytes tail(buffer.begin() + offset, buffer.end());
     out = utils::TClearCVRef<T>::Deserialize(tail);
     offset = buffer.size();
+
+  } else if constexpr (utils::kIsStdOptionalV<T>) {
+    using U = typename utils::TClearCVRef<T>::value_type;
+
+    uint8_t has_value{};
+    read_field(buffer, offset, has_value);
+
+    if (has_value == 0) {
+      out = std::nullopt;
+
+    } else if (has_value == 1) {
+      if constexpr (requires(const Bytes& buf, TOffset& off) {
+                      { U::Deserialize(buf, off) } -> std::same_as<U>;
+                    }) {
+        out.emplace(U::Deserialize(buffer, offset));
+
+      } else {
+        U inner{};
+        read_field(buffer, offset, inner);
+
+        out = std::move(inner);
+      }
+
+    } else {
+      throw std::runtime_error("optional wire tag must be 0 or 1");
+    }
 
   } else if constexpr (SerializableContainer<T>) {
     size_t size;
