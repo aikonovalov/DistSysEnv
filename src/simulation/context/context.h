@@ -25,10 +25,10 @@ class SimulationContext {
   void SendMessage(NodeID to, const Message& msg);
 
   void SendLocal(const Message& msg);
-
   void SendLocal(NodeID to, const Message& msg);
 
-  void SetTimer(std::string name, TTime fire_at);
+  /// Schedules a one-shot timer after `duration` (simulation time) from now.
+  void SetTimer(std::string name, TTime duration);
 
   CoreContext& Core();
 

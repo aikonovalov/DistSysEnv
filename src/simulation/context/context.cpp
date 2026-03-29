@@ -1,4 +1,5 @@
 #include "context.h"
+#include <stdexcept>
 
 #include "../event/event.h"
 
@@ -53,11 +54,15 @@ void SimulationContext::SendLocal(NodeID to, const Message& msg) {
   PushApplicationMessage(to, msg);
 }
 
-void SimulationContext::SetTimer(std::string name, TTime fire_at) {
+void SimulationContext::SetTimer(std::string name, TTime duration) {
+  if (duration <= 0) {
+    throw std::runtime_error("Timer duration must be positive");
+  }
+
   TimerEventPayload payload{core_.GetOwnID(), std::move(name)};
 
   core_.PushEvent(SimulationEvent::make<TimerEventPayload>::Of(
-      fire_at, std::move(payload)));
+      core_.Now() + duration, std::move(payload)));
 }
 
 CoreContext& SimulationContext::Core() {
