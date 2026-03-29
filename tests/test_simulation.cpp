@@ -7,6 +7,7 @@
 #include "src/core/message/message.h"
 #include "src/core/node_id/node_id.h"
 #include "src/simulation/event/event.h"
+#include "src/simulation/context/context.h"
 #include "src/simulation/scenario/scenario.h"
 #include "src/utils/random.h"
 
@@ -327,4 +328,152 @@ TEST_CASE("Network drop notifies sender with Failed", "[simulation][network]") {
   sim.Manager().Process();
 
   REQUIRE(*failed_count == 1);
+}
+
+namespace {
+
+struct TimerResetScenarioNode {
+  std::shared_ptr<int> valid_fires;
+  std::shared_ptr<int> stale_fires_ignored;
+  std::shared_ptr<int> wake_step;
+
+  void OnSimulationEvent(const Event& e, SimulationContext& ctx) {
+    if (e.data.empty()) {
+      const int step = *wake_step;
+      if (step == 0) {
+        ctx.SetTimer("GOOOL", 100.0f);
+        *wake_step = 1;
+
+      } else if (step == 1) {
+        ctx.SetTimer("GOOOL", 50.0f);
+        *wake_step = 2;
+
+      }
+
+      return;
+    }
+
+    SimulationEventKind kind{};
+    if (ClassifySimulationEvent(e, &kind) != Status::OK) {
+      return;
+    }
+
+    if (kind != SimulationEventKind::Timer) {
+      return;
+    }
+
+    if (e.to != ctx.GetOwnID()) {
+      return;
+    }
+
+    DecodedTimerEvent dec{};
+    if (TryDecodeTimerEvent(e, &dec) != Status::OK) {
+      return;
+    }
+
+    if (dec.name != "GOOOL") {
+      return;
+    }
+
+    if (!ctx.IsTimerValid(dec.name, dec.token)) {
+      ++*stale_fires_ignored;
+      return;
+    }
+
+    ++*valid_fires;
+  }
+};
+
+struct TimerCancelOnlyNode {
+  std::shared_ptr<int> valid_fires;
+  std::shared_ptr<int> stale_fires;
+  std::shared_ptr<int> wake_step;
+
+  void OnSimulationEvent(const Event& e, SimulationContext& ctx) {
+    if (e.data.empty()) {
+      const int s = *wake_step;
+      if (s == 0) {
+        ctx.SetTimer("GOOOL", 80.0f);
+        *wake_step = 1;
+
+      } else if (s == 1) {
+        ctx.CancelTimer("GOOOL");
+        *wake_step = 2;
+
+      }
+      return;
+    }
+
+    SimulationEventKind kind{};
+    if (ClassifySimulationEvent(e, &kind) != Status::OK) {
+      return;
+    }
+
+    if (kind != SimulationEventKind::Timer) {
+      return;
+    }
+
+    if (e.to != ctx.GetOwnID()) {
+      return;
+    }
+
+    DecodedTimerEvent dec{};
+    if (TryDecodeTimerEvent(e, &dec) != Status::OK) {
+      return;
+    }
+
+    if (dec.name != "GOOOL") {
+      return;
+    }
+
+    if (!ctx.IsTimerValid(dec.name, dec.token)) {
+      ++*stale_fires;
+      return;
+    }
+
+    ++*valid_fires;
+  }
+};
+
+}
+
+TEST_CASE("Timer reschedule: stale fire ignored, latest fire handled",
+          "[simulation][timer]") {
+  SimulationScenario sim;
+
+  auto valid = std::make_shared<int>(0);
+  auto stale = std::make_shared<int>(0);
+  auto step = std::make_shared<int>(0);
+
+  const NodeID node_id =
+      sim.AddNode(TimerResetScenarioNode{valid, stale, step});
+
+  sim.Manager().PushEvent(Event{node_id, node_id, 0.0f, Bytes{}});
+  sim.Manager().PushEvent(Event{node_id, node_id, 10.0f, Bytes{}});
+
+  sim.RunUntil(110.0f);
+
+  REQUIRE(*valid == 1);
+  REQUIRE(*stale == 1);
+  REQUIRE(*step == 2);
+}
+
+TEST_CASE("CancelTimer invalidates pending fire without rescheduling",
+          "[simulation][timer]") {
+  SimulationScenario sim;
+
+  auto valid = std::make_shared<int>(0);
+  auto stale = std::make_shared<int>(0);
+  auto step = std::make_shared<int>(0);
+
+  const NodeID id = sim.AddNode(TimerCancelOnlyNode{valid, stale, step});
+
+  sim.Manager().PushEvent(Event{id, id, 0.0f, Bytes{}});
+  sim.Manager().PushEvent(Event{id, id, 5.0f, Bytes{}});
+
+  sim.RunUntil(100.0f);
+
+  REQUIRE(*valid == 0);
+  REQUIRE(*stale == 1);
+  REQUIRE(*step == 2);
 }

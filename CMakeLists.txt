@@ -18,6 +18,7 @@ target_include_directories(distsysenv_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(distsysenv_simulation
   src/simulation/context/context.cpp
+  src/simulation/context/timer_book.cpp
   src/simulation/event/event.cpp
   src/simulation/network_node/network_node.cpp
   src/simulation/scenario/scenario.cpp

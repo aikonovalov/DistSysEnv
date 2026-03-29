@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <optional>
+#include <unordered_map>
 
 #include "../../core/event/event_manager.h"
 #include "../../core/message/message.h"
@@ -41,7 +42,8 @@ class SimulationScenario {
 
     NodeID id =
         manager_.AddNode([this, owner](const Event& e, CoreContext& ctx) {
-          SimulationContext sim(ctx, simulation_options_);
+          SimulationTimerBook& book = timer_books_[ctx.GetOwnID()];
+          SimulationContext sim(ctx, simulation_options_, book);
           owner->OnSimulationEvent(e, sim);
         });
 
@@ -73,6 +75,7 @@ class SimulationScenario {
  private:
   EventManager manager_;
   SimulationContextOptions simulation_options_;
+  std::unordered_map<NodeID, SimulationTimerBook> timer_books_;
 };
 
 }  // namespace distsysenv

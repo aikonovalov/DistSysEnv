@@ -6,8 +6,9 @@
 namespace distsysenv {
 
 SimulationContext::SimulationContext(CoreContext& core,
-                                     const SimulationContextOptions& options)
-    : core_(core), options_(options) {}
+                                     const SimulationContextOptions& options,
+                                     SimulationTimerBook& timer_book)
+    : core_(core), options_(options), timer_book_(timer_book) {}
 
 TTime SimulationContext::Now() const {
   return core_.Now();
@@ -59,10 +60,20 @@ void SimulationContext::SetTimer(std::string name, TTime duration) {
     throw std::runtime_error("Timer duration must be positive");
   }
 
-  TimerEventPayload payload{core_.GetOwnID(), std::move(name)};
+  const SimulationTimerBook::Token token = timer_book_.Issue(name);
+  TimerEventPayload payload{core_.GetOwnID(), std::move(name), token};
 
   core_.PushEvent(SimulationEvent::make<TimerEventPayload>::Of(
       core_.Now() + duration, std::move(payload)));
+}
+
+void SimulationContext::CancelTimer(const std::string& name) {
+  timer_book_.Invalidate(name);
+}
+
+bool SimulationContext::IsTimerValid(
+    const std::string& name, SimulationTimerBook::Token token) const {
+  return timer_book_.Validate(name, token);
 }
 
 CoreContext& SimulationContext::Core() {

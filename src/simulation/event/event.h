@@ -39,6 +39,7 @@ struct LocalMessageEventPayload {
 struct TimerEventPayload {
   NodeID node;
   std::string name;
+  uint64_t token = 0;
 };
 
 struct NodeStatusEventPayload {
@@ -103,6 +104,7 @@ struct DecodedLocalMessageEvent {
 
 struct DecodedTimerEvent {
   std::string name;
+  uint64_t token = 0;
 };
 
 struct DecodedNodeStatusEvent {

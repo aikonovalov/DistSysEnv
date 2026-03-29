@@ -17,7 +17,7 @@ Bytes EncodeLocalMessagePayload(const LocalMessageEventPayload& p) {
 }
 
 Bytes EncodeTimerPayload(const TimerEventPayload& p) {
-  return BuildPayload(SimulationEventKind::Timer, p.name);
+  return BuildPayload(SimulationEventKind::Timer, p.token, p.name);
 }
 
 Bytes EncodeNodeStatusPayload(const NodeStatusEventPayload& p) {
@@ -181,6 +181,7 @@ Status TryDecodeTimerEvent(const Event& event, DecodedTimerEvent* out) {
     return Status::ERROR;
   }
 
+  read_field(event.data, off, out->token);
   read_field(event.data, off, out->name);
   if (off != static_cast<TOffset>(event.data.size())) {
     return Status::ERROR;
