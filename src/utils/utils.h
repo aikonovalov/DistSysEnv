@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstring>
+#include <tuple>
 #include <type_traits>
+#include <utility>
 
 #include "bytes.h"
 
@@ -114,6 +116,14 @@ void read_field(const Bytes& buffer, TOffset& offset, T& out) {
   } else {
     throw std::runtime_error("Unsupported type for read_field");
   }
+}
+
+template <typename... Args>
+std::tuple<Args...> ReadFields(const Bytes& buffer, TOffset& offset) {
+  std::tuple<Args...> out{};
+  std::apply([&](auto&... fields) { (read_field(buffer, offset, fields), ...); }, out);
+  
+  return out;
 }
 
 }  // namespace distsysenv

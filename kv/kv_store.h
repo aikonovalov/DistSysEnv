@@ -75,17 +75,17 @@ class KVStore {
 
   Status Set(const TKey& key, const TVal& val) {
     storage_[key] = val;
-    return Status::Ok;
+    return Status::OK;
   }
 
   Status Delete(const TKey& key) {
     auto it = storage_.find(key);
     if (it == storage_.end()) {
-      return Status::Error;
+      return Status::ERROR;
     }
 
     storage_.erase(it);
-    return Status::Ok;
+    return Status::OK;
   }
 
   size_t SpaceElapsed() const {
