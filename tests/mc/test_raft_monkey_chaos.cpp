@@ -12,32 +12,14 @@
 #include "src/simulation/scenario/scenario.h"
 #include "src/utils/random.h"
 
+#include "../metrics/raft_mc_metrics_collector.h"
+#include "apply_quorum_chaos_schedule.h"
 #include "quorum_chaos_schedule.h"
 #include "raft_mc_setup.h"
 
 namespace distsysenv {
 
 namespace {
-
-struct LogClientResponses {
-  std::shared_ptr<std::vector<command::ResponsePayload>> responses;
-
-  void OnSimulationEvent(const Event& e, SimulationContext&) {
-    DecodedLocalMessageEvent dec{
-        NodeID(Index{0}, Generation{0}),
-        Message::FromDescription("_", {}),
-    };
-
-    if (TryDecodeLocalMessageEvent(e, &dec) != Status::OK) {
-      return;
-    }
-
-    if (dec.msg.GetType() == "client_command_response") {
-      responses->push_back(
-          command::ResponsePayload::Deserialize(dec.msg.GetPayload()));
-    }
-  }
-};
 
 constexpr const std::string kMcKey = "GOOOOOOL";
 
@@ -47,28 +29,26 @@ constexpr const std::string kMcKey = "GOOOOOOL";
 
 using namespace distsysenv;
 using namespace distsysenv::mc;
+using namespace distsysenv::metrics;
 
 TEST_CASE("Raft monkey chaos: quorum core stays connected", "[raft][mc]") {
   constexpr int kNodes = 5;
   constexpr uint64_t kSeed = 7052005;
 
-  SimulationScenario sim(NetZeroDelay(kSeed));
-
-  auto log = std::make_shared<std::vector<command::ResponsePayload>>();
-  sim.AddNode(LogClientResponses{log}, NodeTag::kCHECKER);
+  auto schedule_storage = std::make_shared<std::vector<ScheduledClientOp>>();
+  auto response_log = std::make_shared<std::vector<command::ResponsePayload>>();
+  RaftMcMetricsCollector metrics(schedule_storage, response_log);
 
   std::vector<NodeID> ids;
-  ids.reserve(static_cast<size_t>(kNodes));
-  for (int i = 0; i < kNodes; ++i) {
-    ids.push_back(sim.AddNode(RaftNode{{}}));
-  }
+  SimulationScenario sim =
+      BuildRaftMcSimulation<RaftNode>(NetZeroDelay(kSeed), metrics, kNodes, &ids);
 
   WireRaftCluster(sim, ids, 1.0f);
 
   NodeID gw{Index{0}, Generation{0}};
   REQUIRE(sim.NetworkGateway(&gw) == Status::OK);
 
-  std::vector<bool> is_core(static_cast<size_t>(kNodes), false);
+  std::vector<bool> is_core(kNodes, false);
   is_core[0] = true;
   is_core[1] = true;
   is_core[2] = true;
@@ -78,50 +58,33 @@ TEST_CASE("Raft monkey chaos: quorum core stays connected", "[raft][mc]") {
                                       4200.0f);
 
   const NodeID control = ids[0];
-  for (const ChaosLinkAction& a : chaos.link_actions()) {
-    const bool isolate = (a.kind == ChaosLinkAction::Kind::kPartition);
-
-    sim.SchedulePartitionPair(a.timestamp, ids[static_cast<size_t>(a.i)],
-                              ids[static_cast<size_t>(a.j)], isolate, control);
-  }
+  ApplyQuorumChaosLinkSchedule(sim, ids, control, chaos.link_actions());
 
   Random client_rng{kSeed ^ 1258726524ULL};
   const std::vector<TTime> set_times =
       RandomClientTimes(client_rng, 18, 200.0f, 4100.0f);
 
-  int seq = 0;
-  for (TTime t : set_times) {
-    const int core_pick = client_rng.uniform<int>(0, 2);
+  MonkeyClientWorkloadSchedule workload = ScheduleMonkeySetBurst(
+      sim, ids, client_rng, set_times, kMcKey, 2);
 
-    const TCommand cmd(TCommand::Type::eSET, std::string{kMcKey},
-                       std::string{"v"} + std::to_string(seq));
-
-    sim.ScheduleLocalMessage(
-        t, ids[static_cast<size_t>(core_pick)],
-        ids[static_cast<size_t>(core_pick)],
-        Message::FromDescription("client_command", cmd.Serialize()));
-    ++seq;
-  }
+  *schedule_storage = std::move(workload.ops);
 
   constexpr TTime kHealTime = 4800.0f;
-  for (const auto& edge : chaos.final_cut()) {
-    sim.SchedulePartitionPair(kHealTime, ids[static_cast<size_t>(edge.first)],
-                              ids[static_cast<size_t>(edge.second)], false,
-                              control);
-  }
+  ApplyQuorumChaosFinalHeal(sim, ids, control, chaos.final_cut(), kHealTime);
 
   constexpr TTime kVerifyTime = 5200.0f;
-  const TCommand get_cmd(TCommand::Type::eGET, std::string{kMcKey},
-                         std::nullopt);
-
-  sim.ScheduleLocalMessage(
-      kVerifyTime, ids[0], ids[0],
-      Message::FromDescription("client_command", get_cmd.Serialize()));
+  ScheduleMonkeyVerifyGet(sim, ids[0], kVerifyTime, kMcKey, *schedule_storage);
 
   sim.RunUntil(35000.0f);
 
+  const RaftMcMetricsReport report = metrics.SnapshotReport();
+  REQUIRE(report.MeanSetLatency().has_value());
+  REQUIRE(report.MeanGetLatency().has_value());
+  REQUIRE(report.set_latencies.size() >= 1);
+  REQUIRE(report.get_latencies.size() == 1);
+
   std::optional<std::string> last_ok_set;
-  for (const command::ResponsePayload& r : *log) {
+  for (const command::ResponsePayload& r : *response_log) {
     if (r.status != Status::OK) {
       continue;
     }
@@ -136,7 +99,7 @@ TEST_CASE("Raft monkey chaos: quorum core stays connected", "[raft][mc]") {
   REQUIRE(last_ok_set.has_value());
 
   std::optional<std::string> get_value;
-  for (const command::ResponsePayload& r : *log) {
+  for (const command::ResponsePayload& r : *response_log) {
     if (r.status != Status::OK) {
       continue;
     }

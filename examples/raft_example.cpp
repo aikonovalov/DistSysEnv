@@ -1,12 +1,12 @@
 #include <iostream>
 
-#include "raft/message_specs.h"
-#include "raft/raft.h"
-#include "src/core/message/message.h"
-#include "src/core/node_id/node_id.h"
-#include "src/simulation/event/event.h"
-#include "src/simulation/scenario/scenario.h"
-#include "src/utils/random.h"
+#include "../raft/message_specs.h"
+#include "../raft/raft.h"
+#include "../src/core/message/message.h"
+#include "../src/core/node_id/node_id.h"
+#include "../src/simulation/event/event.h"
+#include "../src/simulation/scenario/scenario.h"
+#include "../src/utils/random.h"
 
 namespace distsysenv {
 
