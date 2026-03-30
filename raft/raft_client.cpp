@@ -127,7 +127,8 @@ void RaftNode::DrainPendingClientResponses(SimulationContext& ctx,
       break;
     }
 
-    PendingClientResponse pending = std::move(pending_client_responses_.front());
+    PendingClientResponse pending =
+        std::move(pending_client_responses_.front());
     pending_client_responses_.pop_front();
 
     const command::ResponsePayload resp_payload{
@@ -135,7 +136,7 @@ void RaftNode::DrainPendingClientResponses(SimulationContext& ctx,
         .command = std::move(pending.command),
         .value = std::nullopt,
     };
-    
+
     if (pending.redirect_to.has_value()) {
       ctx.SendMessage(
           *pending.redirect_to,

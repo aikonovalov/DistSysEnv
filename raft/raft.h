@@ -51,8 +51,8 @@ class RaftNode {
     kUpToCommitIndex,
     kAll,
   };
-  void DrainPendingClientResponses(SimulationContext& ctx, Status response_status,
-                                   DrainMode mode);
+  void DrainPendingClientResponses(SimulationContext& ctx,
+                                   Status response_status, DrainMode mode);
   void HandleAppendEntriesResponse(NodeID from, const Message& msg,
                                    SimulationContext& ctx);
   void HandleClientCommandRedirected(NodeID from, const Message& msg,

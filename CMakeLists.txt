@@ -79,3 +79,9 @@ add_executable(main_example
 )
 target_link_libraries(main_example PUBLIC distsysenv_simulation)
 target_include_directories(main_example PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_executable(raft_example
+  examples/raft_example.cpp
+)
+target_link_libraries(raft_example PRIVATE distsysenv_raft)
+target_include_directories(raft_example PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

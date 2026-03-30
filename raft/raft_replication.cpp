@@ -71,7 +71,6 @@ void RaftNode::HandleAppendEntries(NodeID from, const Message& msg,
     const TIndex new_commit =
         std::min(req_payload.leader_commit_index, last_new);
 
-    
     if (new_commit > commit_index_) {
       commit_index_ = new_commit;
 
