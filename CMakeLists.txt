@@ -27,7 +27,11 @@ target_link_libraries(distsysenv_simulation PUBLIC distsysenv_core)
 target_include_directories(distsysenv_simulation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(distsysenv_raft
-  raft/raft.cpp
+  raft/raft_node.cpp
+  raft/raft_election.cpp
+  raft/raft_replication.cpp
+  raft/raft_state.cpp
+  raft/raft_client.cpp
   raft/message_specs.cpp
 )
 target_link_libraries(distsysenv_raft PUBLIC distsysenv_simulation)

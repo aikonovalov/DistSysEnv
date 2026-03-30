@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstdint>
 #include <deque>
 #include <optional>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "../kv/kv_store.h"
@@ -43,7 +45,14 @@ class RaftNode {
                            SimulationContext& ctx);
 
   void SendAppendEntries(NodeID peer, SimulationContext& ctx);
-  void UpdateCommitIndex();
+  void UpdateCommitIndex(SimulationContext& ctx);
+
+  enum class DrainMode : uint8_t {
+    kUpToCommitIndex,
+    kAll,
+  };
+  void DrainPendingClientResponses(SimulationContext& ctx, Status response_status,
+                                   DrainMode mode);
   void HandleAppendEntriesResponse(NodeID from, const Message& msg,
                                    SimulationContext& ctx);
   void HandleClientCommandRedirected(NodeID from, const Message& msg,
@@ -75,6 +84,12 @@ class RaftNode {
   };
   void SendStateToChecker(SimulationContext& ctx, const RaftEvent& raft_event);
 
+  struct PendingClientResponse {
+    TIndex log_index;
+    std::optional<NodeID> redirect_to;
+    TCommand command;
+  };
+
   static constexpr TTime kHEARTBEAT_INTERVAL = 50;
   static constexpr TTime kELECTION_TIMEOUT_MIN = kHEARTBEAT_INTERVAL * 2;
   static constexpr TTime kELECTION_TIMEOUT_MAX = kHEARTBEAT_INTERVAL * 4;
@@ -97,8 +112,10 @@ class RaftNode {
   TIndex last_applied_ = -1;
 
   TIndex votes_received_ = 0;
+  std::unordered_set<NodeID> vote_ack_peers_;
 
   std::deque<TCommand> pending_client_commands_;
+  std::deque<PendingClientResponse> pending_client_responses_;
 };
 
 }  // namespace distsysenv
