@@ -16,6 +16,7 @@ enum class SimulationEventKind : uint8_t {
   LocalMessage = 1,
   Timer = 2,
   NodeStatus = 3,
+  PartitionPair = 4,
 };
 
 enum class MessageDeliveryStatus : uint8_t {
@@ -50,6 +51,12 @@ struct NodeStatusEventPayload {
   NodeID node_id;
 };
 
+struct PartitionPairEventPayload {
+  NodeID endpoint_a;
+  NodeID endpoint_b;
+  bool isolate = false;
+};
+
 namespace detail {
 
 template <typename T>
@@ -74,6 +81,12 @@ template <>
 struct Creator<NodeStatusEventPayload> {
   static Event Of(TTime ts, NodeID from, NodeID to,
                   NodeStatusEventPayload payload);
+};
+
+template <>
+struct Creator<PartitionPairEventPayload> {
+  static Event Of(TTime ts, NodeID from, NodeID to,
+                  PartitionPairEventPayload payload);
 };
 
 }  // namespace detail
@@ -112,6 +125,12 @@ struct DecodedNodeStatusEvent {
   NodeID node_id;
 };
 
+struct DecodedPartitionPairEvent {
+  NodeID endpoint_a{Index{0}, Generation{0}};
+  NodeID endpoint_b{Index{0}, Generation{0}};
+  bool isolate = false;
+};
+
 Status ClassifySimulationEvent(const Event& event,
                                SimulationEventKind* out_kind);
 
@@ -121,5 +140,7 @@ Status TryDecodeLocalMessageEvent(const Event& event,
 Status TryDecodeTimerEvent(const Event& event, DecodedTimerEvent* out);
 Status TryDecodeNodeStatusEvent(const Event& event,
                                 DecodedNodeStatusEvent* out);
+Status TryDecodePartitionPairEvent(const Event& event,
+                                   DecodedPartitionPairEvent* out);
 
 }  // namespace distsysenv

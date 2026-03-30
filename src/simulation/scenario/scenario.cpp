@@ -76,6 +76,19 @@ void SimulationScenario::ScheduleNodeRecover(TTime at, NodeID target,
       std::move(payload)));
 }
 
+void SimulationScenario::SchedulePartitionPair(TTime at, NodeID endpoint_a,
+                                               NodeID endpoint_b, bool isolate,
+                                               NodeID control_from) {
+  assert(simulation_options_.network_gateway.has_value() &&
+         "SchedulePartitionPair requires a network node");
+
+  PartitionPairEventPayload payload{
+      .endpoint_a = endpoint_a, .endpoint_b = endpoint_b, .isolate = isolate};
+  manager_.PushEvent(SimulationEvent::make<PartitionPairEventPayload>::Of(
+      at, control_from, *simulation_options_.network_gateway,
+      std::move(payload)));
+}
+
 void SimulationScenario::RunUntil(TTime until) {
   manager_.ProcessUntil(until);
 }

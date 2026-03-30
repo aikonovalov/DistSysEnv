@@ -30,6 +30,18 @@ void Network::OnEvent(const Event& event, CoreContext& ctx) {
     return;
   }
 
+  if (kind == SimulationEventKind::PartitionPair) {
+    DecodedPartitionPairEvent dec;
+
+    if (TryDecodePartitionPairEvent(event, &dec) != Status::OK) {
+      return;
+    }
+
+    ApplyPartitionPair(dec.endpoint_a, dec.endpoint_b, dec.isolate);
+
+    return;
+  }
+
   if (kind != SimulationEventKind::Message) {
     return;
   }
@@ -73,6 +85,20 @@ void Network::SetNodeStatus(NodeStatusEventPayload::Status status,
 
   } else {
     node_settings_[node_id].is_failed = NodeNetworkSettings::Status::OK;
+  }
+}
+
+void Network::ApplyPartitionPair(NodeID a, NodeID b, bool isolate) {
+  if (a == b) {
+    return;
+  }
+
+  if (isolate) {
+    node_settings_[a].partitioned_from.insert(b);
+    node_settings_[b].partitioned_from.insert(a);
+  } else {
+    node_settings_[a].partitioned_from.erase(b);
+    node_settings_[b].partitioned_from.erase(a);
   }
 }
 

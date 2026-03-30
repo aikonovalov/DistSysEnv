@@ -70,6 +70,9 @@ class SimulationScenario {
   void ScheduleNodeFail(TTime at, NodeID target, NodeID control_from);
   void ScheduleNodeRecover(TTime at, NodeID target, NodeID control_from);
 
+  void SchedulePartitionPair(TTime at, NodeID endpoint_a, NodeID endpoint_b,
+                             bool isolate, NodeID control_from);
+
   void RunUntil(TTime until);
 
  private:

@@ -1,6 +1,6 @@
 #include <iostream>
-#include <vector>
 
+#include "raft/message_specs.h"
 #include "raft/raft.h"
 #include "src/core/message/message.h"
 #include "src/core/node_id/node_id.h"
@@ -45,6 +45,8 @@ void WireRaftCluster(SimulationScenario& sim, const std::vector<NodeID>& ids,
 }
 
 struct RaftChecker {
+  int next_seq = 0;
+
   void OnSimulationEvent(const Event& e, SimulationContext& ctx) {
     DecodedLocalMessageEvent dec{
         NodeID(Index{0}, Generation{0}),
@@ -55,9 +57,53 @@ struct RaftChecker {
       return;
     }
 
+    const int seq = ++next_seq;
+    const TTime t = ctx.Now();
+    const int64_t from_idx = GetIndexVal(dec.from.index());
+
     if (dec.msg.GetType() == "raft_state") {
-      std::cout << "[CHECKER] Raft state update at time " << ctx.Now()
-                << std::endl;
+      const Bytes& pl = dec.msg.GetPayload();
+      if (pl.empty()) {
+        return;
+      }
+      const auto b = static_cast<uint8_t>(pl[0]);
+      const char* role = "?";
+      if (b == 0) {
+        role = "FOLLOWER";
+      } else if (b == 1) {
+        role = "CANDIDATE";
+      } else if (b == 2) {
+        role = "LEADER";
+      }
+      std::cout << "[CHECKER] #" << seq << " raft_state t=" << t
+                << " node=" << from_idx << " -> " << role << std::endl;
+      return;
+    }
+
+    if (dec.msg.GetType() == "client_command_response") {
+      command::ResponsePayload resp =
+          command::ResponsePayload::Deserialize(dec.msg.GetPayload());
+      const char* st = (resp.status == Status::OK) ? "OK" : "ERROR";
+      const char* ty = "?";
+      switch (resp.command.type()) {
+        case TCommand::Type::eGET:
+          ty = "GET";
+          break;
+        case TCommand::Type::eSET:
+          ty = "SET";
+          break;
+        case TCommand::Type::eDEL:
+          ty = "DEL";
+          break;
+      }
+      std::cout << "[CHECKER] #" << seq << " client_response t=" << t
+                << " node=" << from_idx << " " << ty
+                << " key=" << resp.command.key() << " status=" << st;
+      if (resp.command.type() == TCommand::Type::eGET &&
+          resp.value.has_value()) {
+        std::cout << " value=" << *resp.value;
+      }
+      std::cout << std::endl;
     }
   }
 };

@@ -119,6 +119,32 @@ TEST_CASE("LocalMessage wire: process writes to terminal, not to self",
   REQUIRE(out.msg.GetType() == "log_line");
 }
 
+TEST_CASE("PartitionPair wire: kind and decode",
+          "[simulation][event][partition]") {
+  const NodeID ctrl(Index{9}, Generation{1});
+  const NodeID gw(Index{8}, Generation{1});
+  const NodeID a(Index{1}, Generation{1});
+  const NodeID b(Index{2}, Generation{1});
+
+  PartitionPairEventPayload payload{
+      .endpoint_a = a, .endpoint_b = b, .isolate = true};
+  Event ev = SimulationEvent::make<PartitionPairEventPayload>::Of(
+      4.0f, ctrl, gw, std::move(payload));
+
+  SimulationEventKind kind{};
+  REQUIRE(ClassifySimulationEvent(ev, &kind) == Status::OK);
+  REQUIRE(kind == SimulationEventKind::PartitionPair);
+  REQUIRE(ev.from == ctrl);
+  REQUIRE(ev.to == gw);
+  REQUIRE(ev.timestamp == 4.0f);
+
+  DecodedPartitionPairEvent out{};
+  REQUIRE(TryDecodePartitionPairEvent(ev, &out) == Status::OK);
+  REQUIRE(out.endpoint_a == a);
+  REQUIRE(out.endpoint_b == b);
+  REQUIRE(out.isolate == true);
+}
+
 TEST_CASE("Message wire: network envelope between nodes",
           "[simulation][event]") {
   const NodeID from(Index{1}, Generation{1});
@@ -306,6 +332,70 @@ struct SendToPeerAndCountFailed {
 };
 
 }  // namespace
+
+TEST_CASE("Network partition pair drops messages both ways",
+          "[simulation][network][partition]") {
+  NetworkSettings net_settings;
+  net_settings.drop_prob = 0.0f;
+  net_settings.min_delay = 0.0f;
+  net_settings.max_delay = 0.0f;
+
+  SimulationScenario sim(
+      Network::Config{.behavior = net_settings, .random_seed = RandomSeed{3}});
+
+  struct IgnoreAll {
+    void OnSimulationEvent(const Event&, SimulationContext&) {}
+  };
+
+  const NodeID recv_id = sim.AddNode(IgnoreAll{});
+  auto failed_count = std::make_shared<int>(0);
+  const NodeID sender_id =
+      sim.AddNode(SendToPeerAndCountFailed{recv_id, failed_count});
+
+  NodeID gw{Index{0}, Generation{0}};
+  REQUIRE(sim.NetworkGateway(&gw) == Status::OK);
+
+  sim.Manager().PushEvent(SimulationEvent::make<PartitionPairEventPayload>::Of(
+      0.0f, sender_id, gw,
+      PartitionPairEventPayload{
+          .endpoint_a = sender_id, .endpoint_b = recv_id, .isolate = true}));
+  sim.Manager().PushEvent(Event{sender_id, sender_id, 1.0f, Bytes{}});
+  sim.Manager().Process();
+
+  REQUIRE(*failed_count == 1);
+}
+
+TEST_CASE("Network partition heal restores delivery",
+          "[simulation][network][partition]") {
+  NetworkSettings net_settings;
+  net_settings.drop_prob = 0.0f;
+  net_settings.min_delay = 0.0f;
+  net_settings.max_delay = 0.0f;
+
+  SimulationScenario sim(
+      Network::Config{.behavior = net_settings, .random_seed = RandomSeed{5}});
+
+  auto received = std::make_shared<int>(0);
+  const NodeID recv_id =
+      sim.AddNode(CountReceivedOfType{received, "hello_peer"});
+  const NodeID sender_id = sim.AddNode(SendToPeerOnWake{recv_id});
+
+  NodeID gw{Index{0}, Generation{0}};
+  REQUIRE(sim.NetworkGateway(&gw) == Status::OK);
+
+  sim.Manager().PushEvent(SimulationEvent::make<PartitionPairEventPayload>::Of(
+      0.0f, sender_id, gw,
+      PartitionPairEventPayload{
+          .endpoint_a = sender_id, .endpoint_b = recv_id, .isolate = true}));
+  sim.Manager().PushEvent(SimulationEvent::make<PartitionPairEventPayload>::Of(
+      1.0f, sender_id, gw,
+      PartitionPairEventPayload{
+          .endpoint_a = sender_id, .endpoint_b = recv_id, .isolate = false}));
+  sim.Manager().PushEvent(Event{sender_id, sender_id, 2.0f, Bytes{}});
+  sim.Manager().Process();
+
+  REQUIRE(*received == 1);
+}
 
 TEST_CASE("Network drop notifies sender with Failed", "[simulation][network]") {
   NetworkSettings net_settings;

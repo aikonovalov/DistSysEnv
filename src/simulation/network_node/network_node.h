@@ -28,6 +28,7 @@ class Network {
  private:
   void HandleSend(NodeID from, NodeID to, const Message& msg, CoreContext& ctx);
   void SetNodeStatus(NodeStatusEventPayload::Status status, NodeID node_id);
+  void ApplyPartitionPair(NodeID a, NodeID b, bool isolate);
 
   bool ShouldDrop(NodeID from, NodeID to);
 

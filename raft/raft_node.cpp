@@ -1,8 +1,5 @@
 #include "raft.h"
 
-#include <cstddef>
-#include <optional>
-#include <type_traits>
 #include "../src/simulation/event/event.h"
 #include "message_specs.h"
 
@@ -77,8 +74,12 @@ void RaftNode::OnSimulationEvent(const Event& e, SimulationContext& ctx) {
 
       return;
     }
-    case SimulationEventKind::NodeStatus:
+    case SimulationEventKind::NodeStatus: {
       return;
+    }
+    case SimulationEventKind::PartitionPair: {
+      return;
+    }
   }
 }
 

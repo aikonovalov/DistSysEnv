@@ -24,6 +24,13 @@ Bytes EncodeNodeStatusPayload(const NodeStatusEventPayload& p) {
   return BuildPayload(SimulationEventKind::NodeStatus, p.status, p.node_id);
 }
 
+Bytes EncodePartitionPairPayload(const PartitionPairEventPayload& p) {
+  const uint8_t cut = p.isolate;
+
+  return BuildPayload(SimulationEventKind::PartitionPair, p.endpoint_a,
+                      p.endpoint_b, cut);
+}
+
 bool IsKnownMessageDeliveryStatus(MessageDeliveryStatus s) {
   return s == MessageDeliveryStatus::Sended ||
          s == MessageDeliveryStatus::Received ||
@@ -57,6 +64,11 @@ Event Creator<NodeStatusEventPayload>::Of(TTime ts, NodeID from, NodeID to,
   return Event{from, to, ts, EncodeNodeStatusPayload(payload)};
 }
 
+Event Creator<PartitionPairEventPayload>::Of(
+    TTime ts, NodeID from, NodeID to, PartitionPairEventPayload payload) {
+  return Event{from, to, ts, EncodePartitionPairPayload(payload)};
+}
+
 }  // namespace detail
 
 Event MakeRoutedApplicationMessage(TTime ts, NodeID transport_to,
@@ -88,7 +100,8 @@ Status ClassifySimulationEvent(const Event& event,
   if (kind != SimulationEventKind::Message &&
       kind != SimulationEventKind::LocalMessage &&
       kind != SimulationEventKind::Timer &&
-      kind != SimulationEventKind::NodeStatus) {
+      kind != SimulationEventKind::NodeStatus &&
+      kind != SimulationEventKind::PartitionPair) {
     return Status::ERROR;
   }
 
@@ -220,6 +233,42 @@ Status TryDecodeNodeStatusEvent(const Event& event,
   }
 
   out->status = status;
+
+  return Status::OK;
+}
+
+Status TryDecodePartitionPairEvent(const Event& event,
+                                   DecodedPartitionPairEvent* out) {
+  if (out == nullptr) {
+    return Status::ERROR;
+  }
+
+  TOffset off = 0;
+  if (event.data.size() < sizeof(SimulationEventKind)) {
+    return Status::ERROR;
+  }
+
+  SimulationEventKind kind{};
+  read_field(event.data, off, kind);
+  if (kind != SimulationEventKind::PartitionPair) {
+    return Status::ERROR;
+  }
+
+  read_field(event.data, off, out->endpoint_a);
+  read_field(event.data, off, out->endpoint_b);
+
+  uint8_t cut{};
+  read_field(event.data, off, cut);
+
+  if (cut > 1) {
+    return Status::ERROR;
+  }
+
+  if (off != static_cast<TOffset>(event.data.size())) {
+    return Status::ERROR;
+  }
+
+  out->isolate = cut != 0;
 
   return Status::OK;
 }
