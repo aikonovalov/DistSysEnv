@@ -40,18 +40,26 @@ target_include_directories(distsysenv_raft PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(test_core
   tests/test_core.cpp
 )
+target_include_directories(test_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(test_core PRIVATE distsysenv_core Catch2::Catch2WithMain)
+
 add_executable(test_simulation
   tests/test_simulation.cpp
 )
+target_include_directories(test_simulation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(test_simulation PRIVATE distsysenv_simulation Catch2::Catch2WithMain)
+
 add_executable(test_raft
   tests/test_raft.cpp
 )
-target_include_directories(test_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(test_simulation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(test_raft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(test_core PRIVATE distsysenv_core Catch2::Catch2WithMain)
-target_link_libraries(test_simulation PRIVATE distsysenv_simulation Catch2::Catch2WithMain)
 target_link_libraries(test_raft PRIVATE distsysenv_raft Catch2::Catch2WithMain)
+
+add_executable(test_mc
+  tests/mc/test_raft_monkey_chaos.cpp
+)
+target_include_directories(test_mc PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(test_mc PRIVATE distsysenv_raft Catch2::Catch2WithMain)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND DEFINED catch2_LIB_DIRS_RELEASE)
   target_include_directories(test_core PRIVATE ${Catch2_INCLUDE_DIRS})
@@ -69,6 +77,12 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND DEFINED catch2_LIB_DIRS_RELEASE)
 
   target_include_directories(test_raft PRIVATE ${Catch2_INCLUDE_DIRS})
   target_link_libraries(test_raft PRIVATE
+    "${catch2_LIB_DIRS_RELEASE}/libCatch2.a"
+    "${catch2_LIB_DIRS_RELEASE}/libCatch2Main.a"
+  )
+
+  target_include_directories(test_mc PRIVATE ${Catch2_INCLUDE_DIRS})
+  target_link_libraries(test_mc PRIVATE
     "${catch2_LIB_DIRS_RELEASE}/libCatch2.a"
     "${catch2_LIB_DIRS_RELEASE}/libCatch2Main.a"
   )
