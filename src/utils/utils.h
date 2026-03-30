@@ -47,7 +47,7 @@ concept SerializableContainer = std::ranges::range<utils::TClearCVRef<T>> &&
                                 };
 
 template <typename T>
-concept Serializable = []() {
+inline constexpr bool kIsSerializableV = []() -> bool {
   using U = utils::TClearCVRef<T>;
 
   if constexpr (std::is_trivially_copyable_v<U> && !std::is_pointer_v<U>) {
@@ -67,11 +67,14 @@ concept Serializable = []() {
     return true;
 
   } else if constexpr (utils::kIsStdOptionalV<T>) {
-    return SerializableImpl<typename U::value_type>();
+    return kIsSerializableV<typename U::value_type>;
   }
 
   return false;
 }();
+
+template <typename T>
+concept Serializable = kIsSerializableV<T>;
 
 template <typename T>
 void append_item(Bytes& buffer, const T& value) {

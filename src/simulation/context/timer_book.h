@@ -12,9 +12,6 @@ class SimulationTimerBook {
 
   Token Issue(const std::string& name);
 
-  /// Bumps generation for `name` so all already-queued timer events for that name
-  /// become stale (no new event is scheduled). Same effect as SetTimer with a new
-  /// token, but without scheduling a fire.
   void Invalidate(const std::string& name);
 
   bool Validate(const std::string& name, Token token) const;
