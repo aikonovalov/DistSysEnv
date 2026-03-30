@@ -39,3 +39,12 @@
 
 # debug information files
 *.dwo
+
+build/
+.clang-format
+
+conan_toolchain.cmake
+conanbuildinfo.*
+conaninfo.txt
+graph_info.json
+CMakeUserPresets.json
