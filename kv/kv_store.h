@@ -44,10 +44,8 @@ class Command {
     return buffer;
   }
 
-  static Command Deserialize(const Bytes& bytes) {
+  static Command Deserialize(const Bytes& bytes, TOffset& offset) {
     Command cmd;
-
-    TOffset offset = 0;
 
     read_field(bytes, offset, cmd.type_);
     read_field(bytes, offset, cmd.key_);

@@ -4,7 +4,6 @@
 #include <cstring>
 #include <optional>
 #include <ranges>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -124,7 +123,7 @@ void append(Bytes& buffer, const Args&... args) {
   (append_item(buffer, args), ...);
 }
 
-template <Serializable... Args>
+template <typename... Args>
 Bytes BuildPayload(Args... args) {
   Bytes res_buffer;
 
