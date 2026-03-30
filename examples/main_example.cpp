@@ -69,8 +69,8 @@ void RunExample() {
       .max_delay = 5.0f,
   };
 
-  SimulationScenario sim(Network::Config{.behavior = net_settings,
-                                         .random_seed = MakeRandomSeed(42)});
+  SimulationScenario sim(
+      Network::Config{.behavior = net_settings, .random_seed = RandomSeed{42}});
 
   sim.AddNode(InvariantChecker{}, NodeTag::kCHECKER);
 

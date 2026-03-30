@@ -10,21 +10,17 @@ enum class RandomSeed : uint64_t {
   kDEFAULT = 0,
 };
 
-[[nodiscard]] constexpr RandomSeed MakeRandomSeed(uint64_t value) noexcept {
-  return static_cast<RandomSeed>(value);
-}
-
 class Random {
  public:
   Random()
       : seed_(static_cast<RandomSeed_t>(RandomSeed::kDEFAULT)),
-        gen_(mix_seed(seed_)) {}
+        gen_(seed_) {}
 
   explicit Random(RandomSeed seed)
-      : seed_(static_cast<RandomSeed_t>(seed)), gen_(mix_seed(seed_)) {}
+      : seed_(static_cast<RandomSeed_t>(seed)), gen_(seed_) {}
 
   explicit Random(uint64_t raw_seed)
-      : seed_(raw_seed), gen_(mix_seed(raw_seed)) {}
+      : seed_(raw_seed), gen_(raw_seed) {}
 
   template <typename T>
   T uniform(T a, T b) {
@@ -42,10 +38,6 @@ class Random {
 
  private:
   using RandomSeed_t = std::underlying_type_t<RandomSeed>;
-
-  static std::mt19937::result_type mix_seed(uint64_t s) {
-    return static_cast<std::mt19937::result_type>(s ^ (s >> 32) ^ (s >> 48));
-  }
 
   RandomSeed_t seed_;
   std::mt19937 gen_;

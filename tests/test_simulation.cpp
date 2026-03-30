@@ -262,8 +262,8 @@ TEST_CASE("Network gateway delivers Message to logical peer",
   net_settings.min_delay = 0.0f;
   net_settings.max_delay = 0.0f;
 
-  SimulationScenario sim(Network::Config{.behavior = net_settings,
-                                         .random_seed = MakeRandomSeed(42)});
+  SimulationScenario sim(
+      Network::Config{.behavior = net_settings, .random_seed = RandomSeed{42}});
 
   auto received = std::make_shared<int>(0);
   const NodeID recv_id =
@@ -311,8 +311,8 @@ TEST_CASE("Network drop notifies sender with Failed", "[simulation][network]") {
   NetworkSettings net_settings;
   net_settings.drop_prob = 1.0f;
 
-  SimulationScenario sim(Network::Config{.behavior = net_settings,
-                                         .random_seed = MakeRandomSeed(7)});
+  SimulationScenario sim(
+      Network::Config{.behavior = net_settings, .random_seed = RandomSeed{7}});
 
   struct IgnoreAll {
     void OnSimulationEvent(const Event&, SimulationContext&) {}
