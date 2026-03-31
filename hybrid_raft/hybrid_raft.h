@@ -8,20 +8,20 @@
 #include <vector>
 
 #include "../kv/kv_store.h"
+#include "../raft/message_specs.h"
 #include "../src/core/event/event.h"
 #include "../src/core/message/message.h"
 #include "../src/core/node_id/node_id.h"
 #include "../src/simulation/context/context.h"
 #include "../src/utils/random.h"
-#include "message_specs.h"
 
 namespace distsysenv {
 
-class RaftNode {
+class HybridRaftNode {
  public:
   enum class Role { kFOLLOWER, kCANDIDATE, kLEADER };
 
-  RaftNode(std::vector<NodeID> peers);
+  HybridRaftNode(std::vector<NodeID> peers);
 
   void SetPeers(std::vector<NodeID> new_peers);
 

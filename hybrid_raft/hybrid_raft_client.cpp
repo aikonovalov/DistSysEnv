@@ -1,13 +1,11 @@
-#include "raft.h"
+#include "hybrid_raft.h"
 
 #include <algorithm>
 
-#include "message_specs.h"
-
 namespace distsysenv {
 
-bool RaftNode::ClientCommandsMatch(const TCommand& scheduled,
-                                   const TCommand& response_cmd) {
+bool HybridRaftNode::ClientCommandsMatch(const TCommand& scheduled,
+                                         const TCommand& response_cmd) {
   if (scheduled.type() != response_cmd.type() ||
       scheduled.key() != response_cmd.key()) {
     return false;
@@ -20,7 +18,7 @@ bool RaftNode::ClientCommandsMatch(const TCommand& scheduled,
   return true;
 }
 
-void RaftNode::RequeueAllInflightClientRedirectsToPending() {
+void HybridRaftNode::RequeueAllInflightClientRedirectsToPending() {
   while (!in_flight_redirected_commands_.empty()) {
     pending_client_commands_.push_front(
         std::move(in_flight_redirected_commands_.back().command));
@@ -29,7 +27,7 @@ void RaftNode::RequeueAllInflightClientRedirectsToPending() {
   }
 }
 
-void RaftNode::RequeueInflightRedirectsNotToLeader(NodeID new_leader) {
+void HybridRaftNode::RequeueInflightRedirectsNotToLeader(NodeID new_leader) {
   std::deque<InFlightClientRedirect> keep;
   std::deque<TCommand> stale;
 
@@ -49,7 +47,8 @@ void RaftNode::RequeueInflightRedirectsNotToLeader(NodeID new_leader) {
   }
 }
 
-void RaftNode::SubmitCommand(const TCommand& command, SimulationContext& ctx) {
+void HybridRaftNode::SubmitCommand(const TCommand& command,
+                                   SimulationContext& ctx) {
   if (role_ != Role::kLEADER) {
     if (leader_id_.has_value()) {
       ForwardCommandToLeader(command, ctx);
@@ -63,8 +62,8 @@ void RaftNode::SubmitCommand(const TCommand& command, SimulationContext& ctx) {
   ExecuteClientCommand(command, ctx, std::nullopt);
 }
 
-void RaftNode::ForwardCommandToLeader(const TCommand& command,
-                                      SimulationContext& ctx) {
+void HybridRaftNode::ForwardCommandToLeader(const TCommand& command,
+                                            SimulationContext& ctx) {
   if (!leader_id_.has_value()) {
     pending_client_commands_.push_back(command);
     return;
@@ -80,7 +79,7 @@ void RaftNode::ForwardCommandToLeader(const TCommand& command,
                                            payload.Serialize()));
 }
 
-void RaftNode::FlushPendingClientCommands(SimulationContext& ctx) {
+void HybridRaftNode::FlushPendingClientCommands(SimulationContext& ctx) {
   if (role_ == Role::kLEADER) {
     while (!pending_client_commands_.empty()) {
       TCommand cmd = std::move(pending_client_commands_.front());
@@ -103,9 +102,9 @@ void RaftNode::FlushPendingClientCommands(SimulationContext& ctx) {
   }
 }
 
-void RaftNode::ExecuteClientCommand(const TCommand& command,
-                                    SimulationContext& ctx,
-                                    std::optional<NodeID> redirect_to) {
+void HybridRaftNode::ExecuteClientCommand(const TCommand& command,
+                                          SimulationContext& ctx,
+                                          std::optional<NodeID> redirect_to) {
   auto send_response = [&](const command::ResponsePayload& resp_payload) {
     if (redirect_to.has_value()) {
       ctx.SendMessage(*redirect_to, Message::FromDescription(
@@ -143,8 +142,9 @@ void RaftNode::ExecuteClientCommand(const TCommand& command,
   UpdateCommitIndex(ctx);
 }
 
-void RaftNode::HandleClientCommandRedirected(NodeID from, const Message& msg,
-                                             SimulationContext& ctx) {
+void HybridRaftNode::HandleClientCommandRedirected(NodeID from,
+                                                   const Message& msg,
+                                                   SimulationContext& ctx) {
   (void)from;
   if (role_ != Role::kLEADER) {
     return;
@@ -156,9 +156,8 @@ void RaftNode::HandleClientCommandRedirected(NodeID from, const Message& msg,
   ExecuteClientCommand(payload.command, ctx, payload.reply_to);
 }
 
-void RaftNode::HandleClientCommandRedirectedResponse(NodeID from,
-                                                     const Message& msg,
-                                                     SimulationContext& ctx) {
+void HybridRaftNode::HandleClientCommandRedirectedResponse(
+    NodeID from, const Message& msg, SimulationContext& ctx) {
   command::ResponsePayload resp_payload =
       command::ResponsePayload::Deserialize(msg.GetPayload());
 
@@ -179,9 +178,9 @@ void RaftNode::HandleClientCommandRedirectedResponse(NodeID from,
                                          resp_payload.Serialize()));
 }
 
-void RaftNode::DrainPendingClientResponses(SimulationContext& ctx,
-                                           Status response_status,
-                                           DrainMode mode) {
+void HybridRaftNode::DrainPendingClientResponses(SimulationContext& ctx,
+                                                 Status response_status,
+                                                 DrainMode mode) {
   while (!pending_client_responses_.empty()) {
     if (mode == DrainMode::kUpToCommitIndex &&
         pending_client_responses_.front().log_index > commit_index_) {

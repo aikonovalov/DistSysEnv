@@ -5,6 +5,7 @@
 #include "../node_id/node_id.h"
 
 #include <any>
+#include <cstdint>
 #include <string>
 #include <tuple>
 #include <variant>
@@ -16,6 +17,7 @@ struct Event {
   NodeID to;
   TTime timestamp;
   Bytes data;
+  uint8_t dispatch_order = 0;
 };
 
 struct EventEarlier {

@@ -1,43 +1,15 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <memory>
-#include <string>
-#include <vector>
+#include <iostream>
 
-#include "raft/message_specs.h"
+#include "hybrid_raft/hybrid_raft.h"
 #include "raft/raft.h"
-#include "src/core/message/message.h"
-#include "src/core/node_id/node_id.h"
-#include "src/simulation/event/event.h"
-#include "src/simulation/scenario/scenario.h"
-#include "src/utils/random.h"
 
-#include "quorum_chaos_schedule.h"
-#include "raft_mc_setup.h"
+#include "monkey_chaos_runner.h"
 
 namespace distsysenv {
 
 namespace {
-
-struct LogClientResponses {
-  std::shared_ptr<std::vector<command::ResponsePayload>> responses;
-
-  void OnSimulationEvent(const Event& e, SimulationContext&) {
-    DecodedLocalMessageEvent dec{
-        NodeID(Index{0}, Generation{0}),
-        Message::FromDescription("_", {}),
-    };
-
-    if (TryDecodeLocalMessageEvent(e, &dec) != Status::OK) {
-      return;
-    }
-
-    if (dec.msg.GetType() == "client_command_response") {
-      responses->push_back(
-          command::ResponsePayload::Deserialize(dec.msg.GetPayload()));
-    }
-  }
-};
 
 constexpr const std::string kMcKey = "GOOOOOOL";
 
@@ -49,105 +21,68 @@ using namespace distsysenv;
 using namespace distsysenv::mc;
 
 TEST_CASE("Raft monkey chaos: quorum core stays connected", "[raft][mc]") {
-  constexpr int kNodes = 5;
-  constexpr uint64_t kSeed = 7052005;
+  constexpr uint64_t kSeed = 25959151;
 
-  SimulationScenario sim(NetZeroDelay(kSeed));
+  const MonkeyChaosRunOutcome outcome =
+      RunMonkeyChaosQuorumCoreScenario<RaftNode>(NetJitterLan(kSeed), kSeed,
+                                                 kMcKey);
 
-  auto log = std::make_shared<std::vector<command::ResponsePayload>>();
-  sim.AddNode(LogClientResponses{log}, NodeTag::kCHECKER);
+  const auto& report = outcome.metrics;
+  REQUIRE(report.MeanSetLatency().has_value());
+  REQUIRE(report.MeanGetLatency().has_value());
 
-  std::vector<NodeID> ids;
-  ids.reserve(static_cast<size_t>(kNodes));
-  for (int i = 0; i < kNodes; ++i) {
-    ids.push_back(sim.AddNode(RaftNode{{}}));
-  }
+  REQUIRE(report.set_latencies.size() >= kMonkeyChaosSetOps - 5);
+  REQUIRE(report.get_latencies.size() >= kMonkeyChaosGetOps - 5);
 
-  WireRaftCluster(sim, ids, 1.0f);
+  REQUIRE(outcome.Linearizable());
+}
 
-  NodeID gw{Index{0}, Generation{0}};
-  REQUIRE(sim.NetworkGateway(&gw) == Status::OK);
+namespace {
 
-  std::vector<bool> is_core(static_cast<size_t>(kNodes), false);
-  is_core[0] = true;
-  is_core[1] = true;
-  is_core[2] = true;
+void RunMetricsComparisonStress(const Network::Config& net, uint64_t kSeed,
+                                std::string_view banner) {
+  constexpr TTime kRunUntil = 120000.0f;
+  constexpr MonkeyChaosTimeline kStressTimeline{
+      .chaos_t_min = 2500.0f,
+      .chaos_t_max = 72000.0f,
+      .client_set_t_min = 3500.0f,
+      .client_set_t_max = 68000.0f,
+      .final_heal_time = 78000.0f,
+      .verify_get_time = 82000.0f,
+  };
 
-  Random chaos_rng{kSeed ^ 525626363ULL};
-  QuorumPreservingChaosSchedule chaos(kNodes, is_core, chaos_rng, 48, 120.0f,
-                                      4200.0f);
+  const MonkeyChaosRunOutcome classic =
+      RunMonkeyChaosQuorumCoreScenario<RaftNode>(net, kSeed, kMcKey, kRunUntil,
+                                                 kStressTimeline);
+  const MonkeyChaosRunOutcome hybrid =
+      RunMonkeyChaosQuorumCoreScenario<HybridRaftNode>(
+          net, kSeed, kMcKey, kRunUntil, kStressTimeline);
 
-  const NodeID control = ids[0];
-  for (const ChaosLinkAction& a : chaos.link_actions()) {
-    const bool isolate = (a.kind == ChaosLinkAction::Kind::kPartition);
+  std::cout << banner << '\n';
+  PrintRaftMcMetricsComparison(std::cout, "Raft", classic.metrics, "HybridRaft",
+                               hybrid.metrics);
 
-    sim.SchedulePartitionPair(a.timestamp, ids[static_cast<size_t>(a.i)],
-                              ids[static_cast<size_t>(a.j)], isolate, control);
-  }
+  REQUIRE(classic.Linearizable());
+  REQUIRE(hybrid.Linearizable());
 
-  Random client_rng{kSeed ^ 1258726524ULL};
-  const std::vector<TTime> set_times =
-      RandomClientTimes(client_rng, 18, 200.0f, 4100.0f);
+  REQUIRE(classic.metrics.MeanSetLatency().has_value());
+  REQUIRE(classic.metrics.MeanGetLatency().has_value());
+  REQUIRE(hybrid.metrics.MeanSetLatency().has_value());
+  REQUIRE(hybrid.metrics.MeanGetLatency().has_value());
+}
 
-  int seq = 0;
-  for (TTime t : set_times) {
-    const int core_pick = client_rng.uniform<int>(0, 2);
+}  // namespace
 
-    const TCommand cmd(TCommand::Type::eSET, std::string{kMcKey},
-                       std::string{"v"} + std::to_string(seq));
+TEST_CASE("Raft vs HybridRaft monkey chaos: metrics (jitter only)",
+          "[raft][mc]") {
+  constexpr uint64_t kSeed = 4150515345;
+  RunMetricsComparisonStress(NetJitterLan(kSeed), kSeed,
+                             "--- Monkey chaos: jitter only (no drops) ---");
+}
 
-    sim.ScheduleLocalMessage(
-        t, ids[static_cast<size_t>(core_pick)],
-        ids[static_cast<size_t>(core_pick)],
-        Message::FromDescription("client_command", cmd.Serialize()));
-    ++seq;
-  }
-
-  constexpr TTime kHealTime = 4800.0f;
-  for (const auto& edge : chaos.final_cut()) {
-    sim.SchedulePartitionPair(kHealTime, ids[static_cast<size_t>(edge.first)],
-                              ids[static_cast<size_t>(edge.second)], false,
-                              control);
-  }
-
-  constexpr TTime kVerifyTime = 5200.0f;
-  const TCommand get_cmd(TCommand::Type::eGET, std::string{kMcKey},
-                         std::nullopt);
-
-  sim.ScheduleLocalMessage(
-      kVerifyTime, ids[0], ids[0],
-      Message::FromDescription("client_command", get_cmd.Serialize()));
-
-  sim.RunUntil(35000.0f);
-
-  std::optional<std::string> last_ok_set;
-  for (const command::ResponsePayload& r : *log) {
-    if (r.status != Status::OK) {
-      continue;
-    }
-
-    if (r.command.type() == TCommand::Type::eSET && r.command.key() == kMcKey) {
-      REQUIRE(r.command.value().has_value());
-
-      last_ok_set = *r.command.value();
-    }
-  }
-
-  REQUIRE(last_ok_set.has_value());
-
-  std::optional<std::string> get_value;
-  for (const command::ResponsePayload& r : *log) {
-    if (r.status != Status::OK) {
-      continue;
-    }
-
-    if (r.command.type() == TCommand::Type::eGET && r.command.key() == kMcKey) {
-      REQUIRE(r.value.has_value());
-
-      get_value = *r.value;
-    }
-  }
-
-  REQUIRE(get_value.has_value());
-  REQUIRE(*get_value == *last_ok_set);
+TEST_CASE("Raft vs HybridRaft monkey chaos: metrics (jitter + packet loss)",
+          "[raft][mc]") {
+  constexpr uint64_t kSeed = 4150515345;
+  RunMetricsComparisonStress(NetUnstableLan(kSeed), kSeed,
+                             "--- Monkey chaos: jitter + packet loss ---");
 }

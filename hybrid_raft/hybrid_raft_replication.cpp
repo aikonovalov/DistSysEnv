@@ -1,21 +1,60 @@
-#include "raft.h"
+#include "hybrid_raft.h"
 
 #include <algorithm>
+#include <string>
 #include <vector>
-#include "message_specs.h"
+
+#include "hybrid_message_specs.h"
 
 namespace distsysenv {
 
-void RaftNode::HandleAppendEntries(NodeID from, const Message& msg,
-                                   SimulationContext& ctx) {
+namespace {
+
+hybrid_msg::append_entries::ResponsePayload MakeConflictHintReject(
+    TIndex current_term, const append_entries::RequestPayload& req,
+    const std::vector<LogEntry>& log) {
+  hybrid_msg::append_entries::ResponsePayload resp{
+      .status = Status::ERROR,
+      .term = current_term,
+      .match_index = -1,
+  };
+
+  const TIndex last_log_index = req.last_log_index;
+  if (last_log_index < 0) {
+    return resp;
+  }
+
+  if (last_log_index >= log.size()) {
+    resp.conflict_index = log.size();
+    return resp;
+  }
+
+  const TIndex curr_term = log[last_log_index].term;
+  resp.conflict_term = curr_term;
+
+  TIndex idx = last_log_index;
+  while (idx > 0 && log[idx - 1].term == curr_term) {
+    --idx;
+  }
+
+  resp.conflict_index = idx;
+
+  return resp;
+}
+
+}  // namespace
+
+void HybridRaftNode::HandleAppendEntries(NodeID from, const Message& msg,
+                                         SimulationContext& ctx) {
   append_entries::RequestPayload req_payload =
       append_entries::RequestPayload::Deserialize(msg.GetPayload());
   if (req_payload.term < current_term_) {
-    append_entries::ResponsePayload resp_payload{
+    hybrid_msg::append_entries::ResponsePayload resp_payload{
         .status = Status::ERROR, .term = current_term_, .match_index = -1};
 
-    ctx.SendMessage(from, Message::FromDescription("AppendEntriesResponse",
-                                                   resp_payload.Serialize()));
+    ctx.SendMessage(from,
+                    Message::FromDescription("HybridAppendEntriesResponse",
+                                             resp_payload.Serialize()));
 
     return;
   }
@@ -37,10 +76,10 @@ void RaftNode::HandleAppendEntries(NodeID from, const Message& msg,
       (req_payload.last_log_index < log_.size() &&
        log_[req_payload.last_log_index].term == req_payload.last_log_term);
   if (!log_ok) {
-    append_entries::ResponsePayload resp{
-        .status = Status::ERROR, .term = current_term_, .match_index = -1};
-    ctx.SendMessage(from, Message::FromDescription("AppendEntriesResponse",
-                                                   resp.Serialize()));
+    hybrid_msg::append_entries::ResponsePayload resp =
+        MakeConflictHintReject(current_term_, req_payload, log_);
+    ctx.SendMessage(from, Message::FromDescription(
+                              "HybridAppendEntriesResponse", resp.Serialize()));
     return;
   }
 
@@ -80,18 +119,27 @@ void RaftNode::HandleAppendEntries(NodeID from, const Message& msg,
   }
 
   const TIndex match = GetLastLogIndex();
-  append_entries::ResponsePayload resp_payload{
+  hybrid_msg::append_entries::ResponsePayload resp_payload{
       .status = Status::OK, .term = current_term_, .match_index = match};
 
-  ctx.SendMessage(from, Message::FromDescription("AppendEntriesResponse",
+  ctx.SendMessage(from, Message::FromDescription("HybridAppendEntriesResponse",
                                                  resp_payload.Serialize()));
 
   FlushPendingClientCommands(ctx);
 }
 
-void RaftNode::SendAppendEntries(NodeID peer, SimulationContext& ctx) {
-  TIndex prev_index = next_index_[peer] - 1;
-  TIndex prev_term = (prev_index >= 0) ? log_[prev_index].term : -1;
+void HybridRaftNode::SendAppendEntries(NodeID peer, SimulationContext& ctx) {
+  const TIndex max_next = GetLastLogIndex() + 1;
+  next_index_[peer] =
+      std::clamp(next_index_[peer], static_cast<TIndex>(0), max_next);
+
+  const TIndex prev_index = next_index_[peer] - 1;
+
+  TIndex prev_term = -1;
+
+  if (prev_index >= 0 && prev_index < log_.size()) {
+    prev_term = log_[prev_index].term;
+  }
 
   append_entries::RequestPayload req_payload{
       .term = current_term_,
@@ -112,10 +160,12 @@ void RaftNode::SendAppendEntries(NodeID peer, SimulationContext& ctx) {
   ctx.SendMessage(peer, msg_to_broadcast);
 }
 
-void RaftNode::HandleAppendEntriesResponse(NodeID from, const Message& msg,
-                                           SimulationContext& ctx) {
-  append_entries::ResponsePayload resp_payload =
-      append_entries::ResponsePayload::Deserialize(msg.GetPayload());
+void HybridRaftNode::HandleAppendEntriesResponse(NodeID from,
+                                                 const Message& msg,
+                                                 SimulationContext& ctx) {
+  hybrid_msg::append_entries::ResponsePayload resp_payload =
+      hybrid_msg::append_entries::ResponsePayload::Deserialize(
+          msg.GetPayload());
   if (role_ != Role::kLEADER) {
     return;
   }
@@ -126,10 +176,31 @@ void RaftNode::HandleAppendEntriesResponse(NodeID from, const Message& msg,
   }
 
   if (resp_payload.status == Status::ERROR) {
-    next_index_[from] = std::max<TIndex>(0, next_index_[from] - 1);
-
     ctx.SendLocal(
         Message::FromDescription("raft_metric_append_entries_reject", {}));
+
+    if (resp_payload.conflict_term >= 0) {
+      TIndex found = -1;
+      for (TIndex i = GetLastLogIndex(); i >= 0; --i) {
+        if (log_[i].term == resp_payload.conflict_term) {
+          found = i;
+          break;
+        }
+      }
+
+      if (found >= 0) {
+        next_index_[from] = found + 1;
+      } else if (resp_payload.conflict_index >= 0) {
+        next_index_[from] = resp_payload.conflict_index;
+      } else {
+        next_index_[from] = std::max<TIndex>(0, next_index_[from] - 1);
+      }
+    } else if (resp_payload.conflict_index >= 0) {
+      next_index_[from] = resp_payload.conflict_index;
+
+    } else {
+      next_index_[from] = std::max<TIndex>(0, next_index_[from] - 1);
+    }
 
     SendAppendEntries(from, ctx);
 
@@ -142,7 +213,7 @@ void RaftNode::HandleAppendEntriesResponse(NodeID from, const Message& msg,
   UpdateCommitIndex(ctx);
 }
 
-void RaftNode::UpdateCommitIndex(SimulationContext& ctx) {
+void HybridRaftNode::UpdateCommitIndex(SimulationContext& ctx) {
   std::vector<TIndex> match_indexes;
   match_indexes.push_back(GetLastLogIndex());
 

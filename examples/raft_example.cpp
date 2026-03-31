@@ -1,12 +1,12 @@
 #include <iostream>
 
-#include "raft/message_specs.h"
-#include "raft/raft.h"
-#include "src/core/message/message.h"
-#include "src/core/node_id/node_id.h"
-#include "src/simulation/event/event.h"
-#include "src/simulation/scenario/scenario.h"
-#include "src/utils/random.h"
+#include "../raft/message_specs.h"
+#include "../raft/raft.h"
+#include "../src/core/message/message.h"
+#include "../src/core/node_id/node_id.h"
+#include "../src/simulation/event/event.h"
+#include "../src/simulation/scenario/scenario.h"
+#include "../src/utils/random.h"
 
 namespace distsysenv {
 
@@ -117,7 +117,7 @@ void RunRaftExample() {
 
   constexpr int kNumNodes = 3;
   std::vector<NodeID> ids;
-  ids.reserve(static_cast<size_t>(kNumNodes));
+  ids.reserve(kNumNodes);
 
   for (int i = 0; i < kNumNodes; ++i) {
     ids.push_back(sim.AddNode(RaftNode{{}}));

@@ -1,12 +1,11 @@
-#include "raft.h"
+#include "hybrid_raft.h"
 
 #include <type_traits>
-#include "message_specs.h"
 
 namespace distsysenv {
 
-void RaftNode::HandleRequestVote(NodeID from, const Message& msg,
-                                 SimulationContext& ctx) {
+void HybridRaftNode::HandleRequestVote(NodeID from, const Message& msg,
+                                       SimulationContext& ctx) {
   request_vote::RequestPayload req_payload =
       request_vote::RequestPayload::Deserialize(msg.GetPayload());
 
@@ -42,13 +41,13 @@ void RaftNode::HandleRequestVote(NodeID from, const Message& msg,
   send_vote_response(1);
 }
 
-bool RaftNode::HasElectionMajority() const {
+bool HybridRaftNode::HasElectionMajority() const {
   const size_t cluster = peers_.size() + 1;
   return votes_received_ > cluster / 2;
 }
 
-void RaftNode::HandleRequestVoteResponse(NodeID from, const Message& msg,
-                                         SimulationContext& ctx) {
+void HybridRaftNode::HandleRequestVoteResponse(NodeID from, const Message& msg,
+                                               SimulationContext& ctx) {
   if (role_ != Role::kCANDIDATE) {
     return;
   }
@@ -74,7 +73,7 @@ void RaftNode::HandleRequestVoteResponse(NodeID from, const Message& msg,
   }
 }
 
-void RaftNode::BecomeFollower(int new_term, SimulationContext& ctx) {
+void HybridRaftNode::BecomeFollower(int new_term, SimulationContext& ctx) {
   DrainPendingClientResponses(ctx, Status::ERROR, DrainMode::kAll);
 
   role_ = Role::kFOLLOWER;
@@ -92,7 +91,7 @@ void RaftNode::BecomeFollower(int new_term, SimulationContext& ctx) {
   SendStateToChecker(ctx, RaftEvent::kBECOME_FOLLOWER);
 }
 
-void RaftNode::BecomeCandidate(SimulationContext& ctx) {
+void HybridRaftNode::BecomeCandidate(SimulationContext& ctx) {
   role_ = Role::kCANDIDATE;
 
   ++current_term_;
@@ -106,7 +105,7 @@ void RaftNode::BecomeCandidate(SimulationContext& ctx) {
   SendStateToChecker(ctx, RaftEvent::kBECOME_CANDIDATE);
 }
 
-void RaftNode::BecomeLeader(SimulationContext& ctx) {
+void HybridRaftNode::BecomeLeader(SimulationContext& ctx) {
   role_ = Role::kLEADER;
 
   TIndex next_idx = GetLastLogIndex() + 1;
@@ -119,12 +118,12 @@ void RaftNode::BecomeLeader(SimulationContext& ctx) {
   ctx.SetTimer("heartbeat", kHEARTBEAT_INTERVAL);
   ctx.CancelTimer("election");
 
-  SendStateToChecker(ctx, RaftNode::RaftEvent::kBECOME_LEADER);
+  SendStateToChecker(ctx, HybridRaftNode::RaftEvent::kBECOME_LEADER);
 
   FlushPendingClientCommands(ctx);
 }
 
-void RaftNode::StartElection(SimulationContext& ctx) {
+void HybridRaftNode::StartElection(SimulationContext& ctx) {
   BecomeCandidate(ctx);
 
   request_vote::RequestPayload req_payload{.term = current_term_,
@@ -145,7 +144,7 @@ void RaftNode::StartElection(SimulationContext& ctx) {
   }
 }
 
-void RaftNode::ResetElectionTimer(SimulationContext& ctx) {
+void HybridRaftNode::ResetElectionTimer(SimulationContext& ctx) {
   if (!election_rng_.has_value()) {
     election_rng_.emplace(ctx.GetOwnID().GetHash());
   }
@@ -161,14 +160,14 @@ void RaftNode::ResetElectionTimer(SimulationContext& ctx) {
   ctx.SetTimer("election", duration);
 }
 
-void RaftNode::SendHeartbeats(SimulationContext& ctx) {
+void HybridRaftNode::SendHeartbeats(SimulationContext& ctx) {
   for (const auto& peer : peers_) {
     SendAppendEntries(peer, ctx);
   }
 }
 
-void RaftNode::SendStateToChecker(SimulationContext& ctx,
-                                  const RaftEvent& raft_event) {
+void HybridRaftNode::SendStateToChecker(SimulationContext& ctx,
+                                        const RaftEvent& raft_event) {
   Bytes payload(1);
   payload[0] = static_cast<std::byte>(
       static_cast<std::underlying_type_t<RaftEvent>>(raft_event));

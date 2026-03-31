@@ -29,12 +29,12 @@ NodeID NodeIDManager::Generate() {
 }
 
 void NodeIDManager::Release(NodeID id) {
-  Index_t index = static_cast<Index_t>(id.index());
+  Index_t index = GetIndexVal(id.index());
   free_indices_.insert(index);
 }
 
 bool NodeIDManager::IsValid(NodeID id) const {
-  Index_t index = static_cast<Index_t>(id.index());
+  Index_t index = GetIndexVal(id.index());
 
   if (free_indices_.contains(index)) {
     return false;

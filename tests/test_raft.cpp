@@ -1,8 +1,10 @@
+#include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <memory>
 #include <vector>
 
+#include "hybrid_raft/hybrid_raft.h"
 #include "raft/message_specs.h"
 #include "raft/raft.h"
 #include "src/core/message/message.h"
@@ -93,15 +95,17 @@ struct LogClientResponses {
 
 using namespace distsysenv;
 
-TEST_CASE("Raft single node: election then SET reaches checker",
-          "[raft][simulation]") {
+#define DISTSYSENV_RAFT_TEST_NODE_TYPES RaftNode, HybridRaftNode
+
+TEMPLATE_TEST_CASE("Raft single node: election then SET reaches checker",
+                   "[raft][simulation]", DISTSYSENV_RAFT_TEST_NODE_TYPES) {
   SimulationScenario sim(NetZeroDelay(11));
 
   auto responses = std::make_shared<int>(0);
   sim.AddNode(CountClientResponses{responses}, NodeTag::kCHECKER);
 
   std::vector<NodeID> ids;
-  ids.push_back(sim.AddNode(RaftNode{{}}));
+  ids.push_back(sim.AddNode(TestType{{}}));
 
   WireRaftCluster(sim, ids, 1.0f);
 
@@ -116,13 +120,14 @@ TEST_CASE("Raft single node: election then SET reaches checker",
   REQUIRE(*responses >= 1);
 }
 
-TEST_CASE("Raft single node: GET after SET", "[raft][simulation]") {
+TEMPLATE_TEST_CASE("Raft single node: GET after SET", "[raft][simulation]",
+                   DISTSYSENV_RAFT_TEST_NODE_TYPES) {
   SimulationScenario sim(NetZeroDelay(12));
 
   auto responses = std::make_shared<int>(0);
   sim.AddNode(CountClientResponses{responses}, NodeTag::kCHECKER);
 
-  std::vector<NodeID> ids{sim.AddNode(RaftNode{{}})};
+  std::vector<NodeID> ids{sim.AddNode(TestType{{}})};
   WireRaftCluster(sim, ids, 1.0f);
 
   const TCommand set_cmd(TCommand::Type::eSET, std::string{"x"},
@@ -141,7 +146,8 @@ TEST_CASE("Raft single node: GET after SET", "[raft][simulation]") {
   REQUIRE(*responses >= 2);
 }
 
-TEST_CASE("Raft three nodes: cluster serves SET", "[raft][simulation]") {
+TEMPLATE_TEST_CASE("Raft three nodes: cluster serves SET", "[raft][simulation]",
+                   DISTSYSENV_RAFT_TEST_NODE_TYPES) {
   SimulationScenario sim(NetZeroDelay(13));
 
   auto responses = std::make_shared<int>(0);
@@ -149,7 +155,7 @@ TEST_CASE("Raft three nodes: cluster serves SET", "[raft][simulation]") {
 
   std::vector<NodeID> ids;
   for (int i = 0; i < 3; ++i) {
-    ids.push_back(sim.AddNode(RaftNode{{}}));
+    ids.push_back(sim.AddNode(TestType{{}}));
   }
 
   WireRaftCluster(sim, ids, 1.0f);
@@ -165,8 +171,8 @@ TEST_CASE("Raft three nodes: cluster serves SET", "[raft][simulation]") {
   REQUIRE(*responses >= 1);
 }
 
-TEST_CASE("Raft three nodes: follower forwards command to leader",
-          "[raft][simulation]") {
+TEMPLATE_TEST_CASE("Raft three nodes: follower forwards command to leader",
+                   "[raft][simulation]", DISTSYSENV_RAFT_TEST_NODE_TYPES) {
   SimulationScenario sim(NetZeroDelay(14));
 
   auto responses = std::make_shared<int>(0);
@@ -174,7 +180,7 @@ TEST_CASE("Raft three nodes: follower forwards command to leader",
 
   std::vector<NodeID> ids;
   for (int i = 0; i < 3; ++i) {
-    ids.push_back(sim.AddNode(RaftNode{{}}));
+    ids.push_back(sim.AddNode(TestType{{}}));
   }
 
   WireRaftCluster(sim, ids, 1.0f);
@@ -191,8 +197,9 @@ TEST_CASE("Raft three nodes: follower forwards command to leader",
   REQUIRE(*responses >= 1);
 }
 
-TEST_CASE("Raft three nodes: majority partition still commits SET",
-          "[raft][simulation][partition]") {
+TEMPLATE_TEST_CASE("Raft three nodes: majority partition still commits SET",
+                   "[raft][simulation][partition]",
+                   DISTSYSENV_RAFT_TEST_NODE_TYPES) {
   SimulationScenario sim(NetZeroDelay(21));
 
   auto responses = std::make_shared<int>(0);
@@ -200,7 +207,7 @@ TEST_CASE("Raft three nodes: majority partition still commits SET",
 
   std::vector<NodeID> ids;
   for (int i = 0; i < 3; ++i) {
-    ids.push_back(sim.AddNode(RaftNode{{}}));
+    ids.push_back(sim.AddNode(TestType{{}}));
   }
 
   WireRaftCluster(sim, ids, 1.0f);
@@ -223,8 +230,8 @@ TEST_CASE("Raft three nodes: majority partition still commits SET",
   REQUIRE(*responses >= 1);
 }
 
-TEST_CASE("Raft three nodes: GET observes committed SET value",
-          "[raft][simulation]") {
+TEMPLATE_TEST_CASE("Raft three nodes: GET observes committed SET value",
+                   "[raft][simulation]", DISTSYSENV_RAFT_TEST_NODE_TYPES) {
   SimulationScenario sim(NetZeroDelay(15));
 
   auto log = std::make_shared<std::vector<command::ResponsePayload>>();
@@ -232,7 +239,7 @@ TEST_CASE("Raft three nodes: GET observes committed SET value",
 
   std::vector<NodeID> ids;
   for (int i = 0; i < 3; ++i) {
-    ids.push_back(sim.AddNode(RaftNode{{}}));
+    ids.push_back(sim.AddNode(TestType{{}}));
   }
 
   WireRaftCluster(sim, ids, 1.0f);
@@ -270,8 +277,9 @@ TEST_CASE("Raft three nodes: GET observes committed SET value",
   REQUIRE(saw_get_ok);
 }
 
-TEST_CASE("Raft three nodes: minority partition no client completion",
-          "[raft][simulation][partition]") {
+TEMPLATE_TEST_CASE("Raft three nodes: minority partition no client completion",
+                   "[raft][simulation][partition]",
+                   DISTSYSENV_RAFT_TEST_NODE_TYPES) {
   SimulationScenario sim(NetZeroDelay(22));
 
   auto responses = std::make_shared<int>(0);
@@ -279,7 +287,7 @@ TEST_CASE("Raft three nodes: minority partition no client completion",
 
   std::vector<NodeID> ids;
   for (int i = 0; i < 3; ++i) {
-    ids.push_back(sim.AddNode(RaftNode{{}}));
+    ids.push_back(sim.AddNode(TestType{{}}));
   }
 
   WireRaftCluster(sim, ids, 1.0f);

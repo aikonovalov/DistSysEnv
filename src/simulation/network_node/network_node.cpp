@@ -1,6 +1,9 @@
 #include "network_node.h"
 
 #include <algorithm>
+#include <cmath>
+#include <limits>
+#include <utility>
 
 #include "../../core/context/context.h"
 
@@ -72,7 +75,17 @@ void Network::HandleSend(NodeID from, NodeID to, const Message& msg,
   }
 
   const TTime delay = std::max(RandomDelay(), TTime{0});
-  const TTime arrive = ctx.Now() + delay;
+  TTime arrive = ctx.Now() + delay;
+
+  const std::pair<NodeID, NodeID> link = std::make_pair(from, to);
+
+  const auto it = last_arrival_by_link_.find(link);
+  if (it != last_arrival_by_link_.end() && arrive <= it->second) {
+    arrive = std::nextafter(it->second, std::numeric_limits<TTime>::infinity());
+  }
+
+  last_arrival_by_link_[link] = arrive;
+
   MessageEventPayload payload{MessageDeliveryStatus::Received, from, to, msg};
   ctx.PushEvent(SimulationEvent::make<MessageEventPayload>::Of(
       arrive, std::move(payload)));
