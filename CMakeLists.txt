@@ -37,6 +37,16 @@ add_library(distsysenv_raft
 target_link_libraries(distsysenv_raft PUBLIC distsysenv_simulation)
 target_include_directories(distsysenv_raft PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_library(distsysenv_hybrid_raft
+  hybrid_raft/hybrid_raft_node.cpp
+  hybrid_raft/hybrid_raft_election.cpp
+  hybrid_raft/hybrid_raft_replication.cpp
+  hybrid_raft/hybrid_raft_state.cpp
+  hybrid_raft/hybrid_raft_client.cpp
+)
+target_link_libraries(distsysenv_hybrid_raft PUBLIC distsysenv_raft)
+target_include_directories(distsysenv_hybrid_raft PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_executable(test_core
   tests/test_core.cpp
 )
@@ -53,7 +63,7 @@ add_executable(test_raft
   tests/test_raft.cpp
 )
 target_include_directories(test_raft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(test_raft PRIVATE distsysenv_raft Catch2::Catch2WithMain)
+target_link_libraries(test_raft PRIVATE distsysenv_hybrid_raft Catch2::Catch2WithMain)
 
 add_executable(test_mc
   tests/mc/test_raft_monkey_chaos.cpp
