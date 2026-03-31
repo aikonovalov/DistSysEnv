@@ -69,7 +69,7 @@ add_executable(test_mc
   tests/mc/test_raft_monkey_chaos.cpp
 )
 target_include_directories(test_mc PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(test_mc PRIVATE distsysenv_raft Catch2::Catch2WithMain)
+target_link_libraries(test_mc PRIVATE distsysenv_hybrid_raft Catch2::Catch2WithMain)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND DEFINED catch2_LIB_DIRS_RELEASE)
   target_include_directories(test_core PRIVATE ${Catch2_INCLUDE_DIRS})
