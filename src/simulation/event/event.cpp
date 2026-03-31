@@ -47,40 +47,41 @@ bool IsKnownNodeStatusPayloadStatus(NodeStatusEventPayload::Status s) {
 namespace detail {
 
 Event Creator<MessageEventPayload>::Of(TTime ts, MessageEventPayload payload) {
-  return Event{payload.from, payload.to, ts, EncodeMessagePayload(payload)};
+  return Event{payload.from, payload.to, ts, EncodeMessagePayload(payload), 0};
 }
 
 Event Creator<LocalMessageEventPayload>::Of(TTime ts, NodeID to,
                                             LocalMessageEventPayload payload) {
-  return Event{payload.from, to, ts, EncodeLocalMessagePayload(payload)};
+  return Event{payload.from, to, ts, EncodeLocalMessagePayload(payload), 0};
 }
 
 Event Creator<TimerEventPayload>::Of(TTime ts, TimerEventPayload payload) {
-  return Event{payload.node, payload.node, ts, EncodeTimerPayload(payload)};
+  return Event{payload.node, payload.node, ts, EncodeTimerPayload(payload), 1};
 }
 
 Event Creator<NodeStatusEventPayload>::Of(TTime ts, NodeID from, NodeID to,
                                           NodeStatusEventPayload payload) {
-  return Event{from, to, ts, EncodeNodeStatusPayload(payload)};
+  return Event{from, to, ts, EncodeNodeStatusPayload(payload), 0};
 }
 
 Event Creator<PartitionPairEventPayload>::Of(
     TTime ts, NodeID from, NodeID to, PartitionPairEventPayload payload) {
-  return Event{from, to, ts, EncodePartitionPairPayload(payload)};
+  return Event{from, to, ts, EncodePartitionPairPayload(payload), 0};
 }
 
 }  // namespace detail
 
 Event MakeRoutedApplicationMessage(TTime ts, NodeID transport_to,
                                    MessageEventPayload payload) {
-  return Event{payload.from, transport_to, ts, EncodeMessagePayload(payload)};
+  return Event{payload.from, transport_to, ts, EncodeMessagePayload(payload),
+               0};
 }
 
 Event MakeFailedDeliveryToSenderEvent(TTime ts, NodeID sender,
                                       NodeID intended_to, const Message& msg) {
   MessageEventPayload payload{MessageDeliveryStatus::Failed, sender,
                               intended_to, msg};
-  return Event{sender, sender, ts, EncodeMessagePayload(payload)};
+  return Event{sender, sender, ts, EncodeMessagePayload(payload), 0};
 }
 
 Status ClassifySimulationEvent(const Event& event,
