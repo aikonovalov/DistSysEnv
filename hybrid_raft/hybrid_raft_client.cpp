@@ -1,6 +1,51 @@
 #include "hybrid_raft.h"
 
+#include <algorithm>
+
 namespace distsysenv {
+
+bool HybridRaftNode::ClientCommandsMatch(const TCommand& scheduled,
+                                       const TCommand& response_cmd) {
+  if (scheduled.type() != response_cmd.type() ||
+      scheduled.key() != response_cmd.key()) {
+    return false;
+  }
+
+  if (scheduled.type() == TCommand::Type::eSET) {
+    return scheduled.value() == response_cmd.value();
+  }
+
+  return true;
+}
+
+void HybridRaftNode::RequeueAllInflightClientRedirectsToPending() {
+  while (!in_flight_redirected_commands_.empty()) {
+    pending_client_commands_.push_front(std::move(
+        in_flight_redirected_commands_.back().command));
+    
+    in_flight_redirected_commands_.pop_back();
+  }
+}
+
+void HybridRaftNode::RequeueInflightRedirectsNotToLeader(NodeID new_leader) {
+  std::deque<InFlightClientRedirect> keep;
+  std::deque<TCommand> stale;
+
+  for (auto& inflight : in_flight_redirected_commands_) {
+    if (inflight.sent_to_leader == new_leader) {
+      keep.push_back(std::move(inflight));
+    } else {
+      stale.push_back(std::move(inflight.command));
+    }
+  }
+
+  in_flight_redirected_commands_ = std::move(keep);
+
+  while (!stale.empty()) {
+    pending_client_commands_.push_front(std::move(stale.back()));
+    stale.pop_back();
+  }
+}
 
 void HybridRaftNode::SubmitCommand(const TCommand& command,
                                    SimulationContext& ctx) {
@@ -24,9 +69,12 @@ void HybridRaftNode::ForwardCommandToLeader(const TCommand& command,
     return;
   }
 
+  const NodeID target_leader = *leader_id_;
   client_redirect::RequestPayload payload{.reply_to = ctx.GetOwnID(),
                                           .command = command};
-  ctx.SendMessage(*leader_id_,
+  in_flight_redirected_commands_.push_back(
+      InFlightClientRedirect{.command = command, .sent_to_leader = target_leader});
+  ctx.SendMessage(target_leader,
                   Message::FromDescription("client_command_redirected",
                                            payload.Serialize()));
 }
@@ -110,11 +158,24 @@ void HybridRaftNode::HandleClientCommandRedirected(NodeID from,
 
 void HybridRaftNode::HandleClientCommandRedirectedResponse(
     NodeID from, const Message& msg, SimulationContext& ctx) {
-  (void)from;
   command::ResponsePayload resp_payload =
       command::ResponsePayload::Deserialize(msg.GetPayload());
+
+  const auto it = std::find_if(
+      in_flight_redirected_commands_.begin(),
+      in_flight_redirected_commands_.end(),
+      [&](const InFlightClientRedirect& inflight) {
+        return inflight.sent_to_leader == from &&
+               ClientCommandsMatch(inflight.command, resp_payload.command);
+      });
+
+  if (it == in_flight_redirected_commands_.end()) {
+    return;
+  }
+
+  in_flight_redirected_commands_.erase(it);
   ctx.SendLocal(Message::FromDescription("client_command_response",
-                                         resp_payload.Serialize()));
+                                       resp_payload.Serialize()));
 }
 
 void HybridRaftNode::DrainPendingClientResponses(SimulationContext& ctx,

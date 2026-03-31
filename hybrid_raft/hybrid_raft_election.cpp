@@ -84,6 +84,8 @@ void HybridRaftNode::BecomeFollower(int new_term, SimulationContext& ctx) {
   vote_ack_peers_.clear();
   leader_id_ = std::nullopt;
 
+  RequeueAllInflightClientRedirectsToPending();
+
   ResetElectionTimer(ctx);
 
   SendStateToChecker(ctx, RaftEvent::kBECOME_FOLLOWER);
@@ -97,6 +99,8 @@ void HybridRaftNode::BecomeCandidate(SimulationContext& ctx) {
   votes_received_ = 1;
   vote_ack_peers_.clear();
   leader_id_ = std::nullopt;
+
+  RequeueAllInflightClientRedirectsToPending();
 
   SendStateToChecker(ctx, RaftEvent::kBECOME_CANDIDATE);
 }

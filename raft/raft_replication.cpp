@@ -45,6 +45,7 @@ void RaftNode::HandleAppendEntries(NodeID from, const Message& msg,
   }
 
   ResetElectionTimer(ctx);
+  RequeueInflightRedirectsNotToLeader(from);
   leader_id_ = from;
 
   TIndex curr_insert_index = req_payload.last_log_index + 1;

@@ -62,6 +62,10 @@ class RaftNode {
 
   void ForwardCommandToLeader(const TCommand& command, SimulationContext& ctx);
   void FlushPendingClientCommands(SimulationContext& ctx);
+  void RequeueAllInflightClientRedirectsToPending();
+  void RequeueInflightRedirectsNotToLeader(NodeID new_leader);
+  static bool ClientCommandsMatch(const TCommand& scheduled,
+                                  const TCommand& response_cmd);
   void ExecuteClientCommand(const TCommand& command, SimulationContext& ctx,
                             std::optional<NodeID> redirect_reply_to);
 
@@ -90,6 +94,11 @@ class RaftNode {
     TCommand command;
   };
 
+  struct InFlightClientRedirect {
+    TCommand command;
+    NodeID sent_to_leader;
+  };
+
   static constexpr TTime kHEARTBEAT_INTERVAL = 50;
   static constexpr TTime kELECTION_TIMEOUT_MIN = kHEARTBEAT_INTERVAL * 2;
   static constexpr TTime kELECTION_TIMEOUT_MAX = kHEARTBEAT_INTERVAL * 4;
@@ -116,6 +125,7 @@ class RaftNode {
 
   std::deque<TCommand> pending_client_commands_;
   std::deque<PendingClientResponse> pending_client_responses_;
+  std::deque<InFlightClientRedirect> in_flight_redirected_commands_;
 };
 
 }  // namespace distsysenv
