@@ -8,12 +8,12 @@
 #include <vector>
 
 #include "../kv/kv_store.h"
+#include "../raft/message_specs.h"
 #include "../src/core/event/event.h"
 #include "../src/core/message/message.h"
 #include "../src/core/node_id/node_id.h"
 #include "../src/simulation/context/context.h"
 #include "../src/utils/random.h"
-#include "../raft/message_specs.h"
 
 namespace distsysenv {
 

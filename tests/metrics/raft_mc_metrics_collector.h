@@ -6,13 +6,13 @@
 #include <vector>
 
 #include "../../raft/message_specs.h"
-#include "scheduled_client_op.h"
 #include "../../src/core/message/message.h"
 #include "../../src/core/node_id/node_id.h"
 #include "../../src/simulation/context/context.h"
 #include "../../src/simulation/event/event.h"
 #include "../../src/simulation/scenario/scenario.h"
 #include "../../src/utils/time.h"
+#include "scheduled_client_op.h"
 
 namespace distsysenv::metrics {
 
@@ -61,8 +61,7 @@ class RaftMcMetricsCollector {
   }
 
   void OnSimulationEvent(const Event& e, SimulationContext&) {
-    if (state_->schedule &&
-        state_->schedule->size() > state_->matched.size()) {
+    if (state_->schedule && state_->schedule->size() > state_->matched.size()) {
       state_->matched.resize(state_->schedule->size(), false);
     }
 

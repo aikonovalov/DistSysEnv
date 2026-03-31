@@ -6,30 +6,31 @@
 #include <utility>
 #include <vector>
 
-#include "../metrics/scheduled_client_op.h"
-#include "quorum_chaos_schedule.h"
 #include "../../src/core/message/message.h"
 #include "../../src/core/node_id/node_id.h"
 #include "../../src/simulation/scenario/scenario.h"
 #include "../../src/utils/random.h"
+#include "../metrics/scheduled_client_op.h"
+#include "quorum_chaos_schedule.h"
 
 namespace distsysenv::mc {
 
 inline void ApplyQuorumChaosLinkSchedule(
-    SimulationScenario& sim, const std::vector<NodeID>& ids, NodeID control_from,
-    const std::vector<ChaosLinkAction>& link_actions) {
+    SimulationScenario& sim, const std::vector<NodeID>& ids,
+    NodeID control_from, const std::vector<ChaosLinkAction>& link_actions) {
   for (const ChaosLinkAction& a : link_actions) {
     const bool isolate = (a.kind == ChaosLinkAction::Kind::kPartition);
 
-    sim.SchedulePartitionPair(
-        a.timestamp, ids[static_cast<size_t>(a.i)],
-        ids[static_cast<size_t>(a.j)], isolate, control_from);
+    sim.SchedulePartitionPair(a.timestamp, ids[static_cast<size_t>(a.i)],
+                              ids[static_cast<size_t>(a.j)], isolate,
+                              control_from);
   }
 }
 
 inline void ApplyQuorumChaosFinalHeal(
-    SimulationScenario& sim, const std::vector<NodeID>& ids, NodeID control_from,
-    const std::set<std::pair<int, int>>& final_cut, TTime heal_time) {
+    SimulationScenario& sim, const std::vector<NodeID>& ids,
+    NodeID control_from, const std::set<std::pair<int, int>>& final_cut,
+    TTime heal_time) {
   for (const auto& edge : final_cut) {
     sim.SchedulePartitionPair(heal_time, ids[static_cast<size_t>(edge.first)],
                               ids[static_cast<size_t>(edge.second)], false,
@@ -50,20 +51,19 @@ inline MonkeyClientWorkloadSchedule ScheduleMonkeySetBurst(
 
   int seq = 0;
   for (TTime t : set_times) {
-    const int core_pick =
-        client_rng.uniform<int>(0, core_index_max_inclusive);
+    const int core_pick = client_rng.uniform<int>(0, core_index_max_inclusive);
 
-    const TCommand cmd(TCommand::Type::eSET, key,
-                       std::optional<TVal>{std::string{"v"} +
-                                           std::to_string(seq)});
+    const TCommand cmd(
+        TCommand::Type::eSET, key,
+        std::optional<TVal>{std::string{"v"} + std::to_string(seq)});
 
     out.ops.push_back(
         distsysenv::metrics::ScheduledClientOp{.at = t, .command = cmd});
 
-    sim.ScheduleLocalMessage(t, ids[static_cast<size_t>(core_pick)],
-                             ids[static_cast<size_t>(core_pick)],
-                             Message::FromDescription("client_command",
-                                                      cmd.Serialize()));
+    sim.ScheduleLocalMessage(
+        t, ids[static_cast<size_t>(core_pick)],
+        ids[static_cast<size_t>(core_pick)],
+        Message::FromDescription("client_command", cmd.Serialize()));
     ++seq;
   }
 
@@ -75,12 +75,12 @@ inline void ScheduleMonkeyVerifyGet(
     std::vector<distsysenv::metrics::ScheduledClientOp>& out) {
   const TCommand get_cmd(TCommand::Type::eGET, key, std::nullopt);
 
-  out.push_back(distsysenv::metrics::ScheduledClientOp{
-      .at = at, .command = get_cmd});
+  out.push_back(
+      distsysenv::metrics::ScheduledClientOp{.at = at, .command = get_cmd});
 
-  sim.ScheduleLocalMessage(at, target, target,
-                           Message::FromDescription("client_command",
-                                                    get_cmd.Serialize()));
+  sim.ScheduleLocalMessage(
+      at, target, target,
+      Message::FromDescription("client_command", get_cmd.Serialize()));
 }
 
 }  // namespace distsysenv::mc

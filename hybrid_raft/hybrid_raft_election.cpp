@@ -5,7 +5,7 @@
 namespace distsysenv {
 
 void HybridRaftNode::HandleRequestVote(NodeID from, const Message& msg,
-                                 SimulationContext& ctx) {
+                                       SimulationContext& ctx) {
   request_vote::RequestPayload req_payload =
       request_vote::RequestPayload::Deserialize(msg.GetPayload());
 
@@ -47,7 +47,7 @@ bool HybridRaftNode::HasElectionMajority() const {
 }
 
 void HybridRaftNode::HandleRequestVoteResponse(NodeID from, const Message& msg,
-                                         SimulationContext& ctx) {
+                                               SimulationContext& ctx) {
   if (role_ != Role::kCANDIDATE) {
     return;
   }
@@ -158,7 +158,7 @@ void HybridRaftNode::SendHeartbeats(SimulationContext& ctx) {
 }
 
 void HybridRaftNode::SendStateToChecker(SimulationContext& ctx,
-                                  const RaftEvent& raft_event) {
+                                        const RaftEvent& raft_event) {
   Bytes payload(1);
   payload[0] = static_cast<std::byte>(
       static_cast<std::underlying_type_t<RaftEvent>>(raft_event));

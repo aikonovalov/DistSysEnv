@@ -2,7 +2,8 @@
 
 namespace distsysenv {
 
-void HybridRaftNode::SubmitCommand(const TCommand& command, SimulationContext& ctx) {
+void HybridRaftNode::SubmitCommand(const TCommand& command,
+                                   SimulationContext& ctx) {
   if (role_ != Role::kLEADER) {
     if (leader_id_.has_value()) {
       ForwardCommandToLeader(command, ctx);
@@ -17,7 +18,7 @@ void HybridRaftNode::SubmitCommand(const TCommand& command, SimulationContext& c
 }
 
 void HybridRaftNode::ForwardCommandToLeader(const TCommand& command,
-                                      SimulationContext& ctx) {
+                                            SimulationContext& ctx) {
   if (!leader_id_.has_value()) {
     pending_client_commands_.push_back(command);
     return;
@@ -54,8 +55,8 @@ void HybridRaftNode::FlushPendingClientCommands(SimulationContext& ctx) {
 }
 
 void HybridRaftNode::ExecuteClientCommand(const TCommand& command,
-                                    SimulationContext& ctx,
-                                    std::optional<NodeID> redirect_to) {
+                                          SimulationContext& ctx,
+                                          std::optional<NodeID> redirect_to) {
   auto send_response = [&](const command::ResponsePayload& resp_payload) {
     if (redirect_to.has_value()) {
       ctx.SendMessage(*redirect_to, Message::FromDescription(
@@ -93,8 +94,9 @@ void HybridRaftNode::ExecuteClientCommand(const TCommand& command,
   UpdateCommitIndex(ctx);
 }
 
-void HybridRaftNode::HandleClientCommandRedirected(NodeID from, const Message& msg,
-                                             SimulationContext& ctx) {
+void HybridRaftNode::HandleClientCommandRedirected(NodeID from,
+                                                   const Message& msg,
+                                                   SimulationContext& ctx) {
   (void)from;
   if (role_ != Role::kLEADER) {
     return;
@@ -106,9 +108,8 @@ void HybridRaftNode::HandleClientCommandRedirected(NodeID from, const Message& m
   ExecuteClientCommand(payload.command, ctx, payload.reply_to);
 }
 
-void HybridRaftNode::HandleClientCommandRedirectedResponse(NodeID from,
-                                                     const Message& msg,
-                                                     SimulationContext& ctx) {
+void HybridRaftNode::HandleClientCommandRedirectedResponse(
+    NodeID from, const Message& msg, SimulationContext& ctx) {
   (void)from;
   command::ResponsePayload resp_payload =
       command::ResponsePayload::Deserialize(msg.GetPayload());
@@ -117,8 +118,8 @@ void HybridRaftNode::HandleClientCommandRedirectedResponse(NodeID from,
 }
 
 void HybridRaftNode::DrainPendingClientResponses(SimulationContext& ctx,
-                                           Status response_status,
-                                           DrainMode mode) {
+                                                 Status response_status,
+                                                 DrainMode mode) {
   while (!pending_client_responses_.empty()) {
     if (mode == DrainMode::kUpToCommitIndex &&
         pending_client_responses_.front().log_index > commit_index_) {

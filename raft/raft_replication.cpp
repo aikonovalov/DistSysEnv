@@ -129,8 +129,8 @@ void RaftNode::HandleAppendEntriesResponse(NodeID from, const Message& msg,
   if (resp_payload.status == Status::ERROR) {
     next_index_[from] = std::max<TIndex>(0, next_index_[from] - 1);
 
-    ctx.SendLocal(Message::FromDescription("raft_metric_append_entries_reject",
-                                           {}));
+    ctx.SendLocal(
+        Message::FromDescription("raft_metric_append_entries_reject", {}));
 
     SendAppendEntries(from, ctx);
 

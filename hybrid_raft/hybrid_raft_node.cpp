@@ -4,7 +4,8 @@
 
 namespace distsysenv {
 
-HybridRaftNode::HybridRaftNode(std::vector<NodeID> peers) : peers_(std::move(peers)) {}
+HybridRaftNode::HybridRaftNode(std::vector<NodeID> peers)
+    : peers_(std::move(peers)) {}
 
 void HybridRaftNode::SetPeers(std::vector<NodeID> new_peers) {
   peers_ = std::move(new_peers);
@@ -83,7 +84,7 @@ void HybridRaftNode::OnSimulationEvent(const Event& e, SimulationContext& ctx) {
 }
 
 void HybridRaftNode::OnMessage(NodeID from, const Message& msg,
-                         SimulationContext& ctx) {
+                               SimulationContext& ctx) {
   MessageType curr_type = msg.GetType();
 
   if (curr_type == "RequestVote") {
@@ -104,7 +105,8 @@ void HybridRaftNode::OnMessage(NodeID from, const Message& msg,
   }
 }
 
-void HybridRaftNode::OnLocalMessage(const Message& msg, SimulationContext& ctx) {
+void HybridRaftNode::OnLocalMessage(const Message& msg,
+                                    SimulationContext& ctx) {
   MessageType curr_type = msg.GetType();
 
   if (curr_type == "set_peers") {
@@ -120,7 +122,8 @@ void HybridRaftNode::OnLocalMessage(const Message& msg, SimulationContext& ctx) 
   }
 }
 
-void HybridRaftNode::OnTimer(const std::string& timer_name, SimulationContext& ctx) {
+void HybridRaftNode::OnTimer(const std::string& timer_name,
+                             SimulationContext& ctx) {
   if (timer_name == "election") {
     StartElection(ctx);
 

@@ -40,8 +40,8 @@ TEST_CASE("Raft monkey chaos: quorum core stays connected", "[raft][mc]") {
   RaftMcMetricsCollector metrics(schedule_storage, response_log);
 
   std::vector<NodeID> ids;
-  SimulationScenario sim =
-      BuildRaftMcSimulation<RaftNode>(NetZeroDelay(kSeed), metrics, kNodes, &ids);
+  SimulationScenario sim = BuildRaftMcSimulation<RaftNode>(
+      NetZeroDelay(kSeed), metrics, kNodes, &ids);
 
   WireRaftCluster(sim, ids, 1.0f);
 
@@ -64,8 +64,8 @@ TEST_CASE("Raft monkey chaos: quorum core stays connected", "[raft][mc]") {
   const std::vector<TTime> set_times =
       RandomClientTimes(client_rng, 18, 200.0f, 4100.0f);
 
-  MonkeyClientWorkloadSchedule workload = ScheduleMonkeySetBurst(
-      sim, ids, client_rng, set_times, kMcKey, 2);
+  MonkeyClientWorkloadSchedule workload =
+      ScheduleMonkeySetBurst(sim, ids, client_rng, set_times, kMcKey, 2);
 
   *schedule_storage = std::move(workload.ops);
 

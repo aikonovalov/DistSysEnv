@@ -6,7 +6,7 @@
 namespace distsysenv {
 
 void HybridRaftNode::HandleAppendEntries(NodeID from, const Message& msg,
-                                   SimulationContext& ctx) {
+                                         SimulationContext& ctx) {
   append_entries::RequestPayload req_payload =
       append_entries::RequestPayload::Deserialize(msg.GetPayload());
   if (req_payload.term < current_term_) {
@@ -112,8 +112,9 @@ void HybridRaftNode::SendAppendEntries(NodeID peer, SimulationContext& ctx) {
   ctx.SendMessage(peer, msg_to_broadcast);
 }
 
-void HybridRaftNode::HandleAppendEntriesResponse(NodeID from, const Message& msg,
-                                           SimulationContext& ctx) {
+void HybridRaftNode::HandleAppendEntriesResponse(NodeID from,
+                                                 const Message& msg,
+                                                 SimulationContext& ctx) {
   append_entries::ResponsePayload resp_payload =
       append_entries::ResponsePayload::Deserialize(msg.GetPayload());
   if (role_ != Role::kLEADER) {
@@ -128,8 +129,8 @@ void HybridRaftNode::HandleAppendEntriesResponse(NodeID from, const Message& msg
   if (resp_payload.status == Status::ERROR) {
     next_index_[from] = std::max<TIndex>(0, next_index_[from] - 1);
 
-    ctx.SendLocal(Message::FromDescription("raft_metric_append_entries_reject",
-                                           {}));
+    ctx.SendLocal(
+        Message::FromDescription("raft_metric_append_entries_reject", {}));
 
     SendAppendEntries(from, ctx);
 
