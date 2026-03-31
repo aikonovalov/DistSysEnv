@@ -34,7 +34,7 @@ void RaftNode::HandleAppendEntries(NodeID from, const Message& msg,
 
   bool log_ok =
       (req_payload.last_log_index == -1) ||
-      (req_payload.last_log_index < static_cast<TIndex>(log_.size()) &&
+      (req_payload.last_log_index < log_.size() &&
        log_[req_payload.last_log_index].term == req_payload.last_log_term);
   if (!log_ok) {
     append_entries::ResponsePayload resp{
@@ -50,12 +50,12 @@ void RaftNode::HandleAppendEntries(NodeID from, const Message& msg,
   TIndex curr_insert_index = req_payload.last_log_index + 1;
 
   for (const LogEntry& entry : req_payload.log_entries) {
-    if (curr_insert_index < static_cast<TIndex>(log_.size()) &&
+    if (curr_insert_index < log_.size() &&
         log_[curr_insert_index].term != entry.term) {
       log_.resize(curr_insert_index);
       log_.push_back(entry);
 
-    } else if (curr_insert_index >= static_cast<TIndex>(log_.size())) {
+    } else if (curr_insert_index >= log_.size()) {
       log_.push_back(entry);
 
     } else {
@@ -90,8 +90,7 @@ void RaftNode::HandleAppendEntries(NodeID from, const Message& msg,
 
 void RaftNode::SendAppendEntries(NodeID peer, SimulationContext& ctx) {
   TIndex prev_index = next_index_[peer] - 1;
-  TIndex prev_term =
-      (prev_index >= 0) ? log_[prev_index].term : static_cast<TIndex>(-1);
+  TIndex prev_term = (prev_index >= 0) ? log_[prev_index].term : -1;
 
   append_entries::RequestPayload req_payload{
       .term = current_term_,
@@ -102,8 +101,7 @@ void RaftNode::SendAppendEntries(NodeID peer, SimulationContext& ctx) {
       .leader_commit_index = commit_index_,
   };
 
-  for (size_t i = next_index_[peer]; i < static_cast<size_t>(log_.size());
-       ++i) {
+  for (size_t i = next_index_[peer]; i < log_.size(); ++i) {
     req_payload.log_entries.push_back(log_[i]);
   }
 

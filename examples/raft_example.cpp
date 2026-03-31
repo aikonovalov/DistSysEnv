@@ -117,7 +117,7 @@ void RunRaftExample() {
 
   constexpr int kNumNodes = 3;
   std::vector<NodeID> ids;
-  ids.reserve(static_cast<size_t>(kNumNodes));
+  ids.reserve(kNumNodes);
 
   for (int i = 0; i < kNumNodes; ++i) {
     ids.push_back(sim.AddNode(RaftNode{{}}));

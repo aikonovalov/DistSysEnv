@@ -75,7 +75,7 @@ Bytes RequestPayload::Serialize() const {
   Bytes buf;
   append(buf, term, leader_id, last_log_index, last_log_term);
 
-  TIndex n = static_cast<TIndex>(log_entries.size());
+  TIndex n = log_entries.size();
   append_item(buf, n);
 
   for (const LogEntry& e : log_entries) {
@@ -107,7 +107,7 @@ RequestPayload RequestPayload::Deserialize(const Bytes& bytes) {
 
   std::vector<LogEntry> log_entries;
   if (num_entries > 0) {
-    log_entries.reserve(static_cast<size_t>(num_entries));
+    log_entries.reserve(num_entries);
   }
 
   for (TIndex i = 0; i < num_entries; ++i) {

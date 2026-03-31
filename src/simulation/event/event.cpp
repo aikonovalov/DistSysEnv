@@ -139,7 +139,7 @@ Status TryDecodeMessageEvent(const Event& event, DecodedMessageEvent* out) {
   read_field(event.data, off, wire);
   out->msg = Message::Deserialize(wire);
 
-  if (off != static_cast<TOffset>(event.data.size())) {
+  if (off != event.data.size()) {
     return Status::ERROR;
   }
 
@@ -171,7 +171,7 @@ Status TryDecodeLocalMessageEvent(const Event& event,
   read_field(event.data, off, wire);
   out->msg = Message::Deserialize(wire);
 
-  if (off != static_cast<TOffset>(event.data.size())) {
+  if (off != event.data.size()) {
     return Status::ERROR;
   }
 
@@ -196,7 +196,7 @@ Status TryDecodeTimerEvent(const Event& event, DecodedTimerEvent* out) {
 
   read_field(event.data, off, out->token);
   read_field(event.data, off, out->name);
-  if (off != static_cast<TOffset>(event.data.size())) {
+  if (off != event.data.size()) {
     return Status::ERROR;
   }
 
@@ -228,7 +228,7 @@ Status TryDecodeNodeStatusEvent(const Event& event,
 
   read_field(event.data, off, out->node_id);
 
-  if (off != static_cast<TOffset>(event.data.size())) {
+  if (off != event.data.size()) {
     return Status::ERROR;
   }
 
@@ -264,7 +264,7 @@ Status TryDecodePartitionPairEvent(const Event& event,
     return Status::ERROR;
   }
 
-  if (off != static_cast<TOffset>(event.data.size())) {
+  if (off != event.data.size()) {
     return Status::ERROR;
   }
 

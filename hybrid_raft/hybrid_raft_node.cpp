@@ -96,7 +96,7 @@ void HybridRaftNode::OnMessage(NodeID from, const Message& msg,
   } else if (curr_type == "AppendEntries") {
     HandleAppendEntries(from, msg, ctx);
 
-  } else if (curr_type == "AppendEntriesResponse") {
+  } else if (curr_type == "HybridAppendEntriesResponse") {
     HandleAppendEntriesResponse(from, msg, ctx);
   } else if (curr_type == "client_command_redirected") {
     HandleClientCommandRedirected(from, msg, ctx);

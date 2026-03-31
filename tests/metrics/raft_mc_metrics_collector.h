@@ -170,7 +170,7 @@ inline SimulationScenario BuildRaftMcSimulation(
   sim.AddNode(metrics, NodeTag::kCHECKER);
 
   raft_ids->clear();
-  raft_ids->reserve(static_cast<size_t>(num_nodes));
+  raft_ids->reserve(num_nodes);
 
   for (int i = 0; i < num_nodes; ++i) {
     raft_ids->push_back(sim.AddNode(TRaftNode{{}}));

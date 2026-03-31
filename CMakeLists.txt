@@ -38,6 +38,7 @@ target_link_libraries(distsysenv_raft PUBLIC distsysenv_simulation)
 target_include_directories(distsysenv_raft PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(distsysenv_hybrid_raft
+  hybrid_raft/hybrid_message_specs.cpp
   hybrid_raft/hybrid_raft_node.cpp
   hybrid_raft/hybrid_raft_election.cpp
   hybrid_raft/hybrid_raft_replication.cpp

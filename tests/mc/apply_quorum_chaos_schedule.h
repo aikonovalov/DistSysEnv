@@ -21,8 +21,7 @@ inline void ApplyQuorumChaosLinkSchedule(
   for (const ChaosLinkAction& a : link_actions) {
     const bool isolate = (a.kind == ChaosLinkAction::Kind::kPartition);
 
-    sim.SchedulePartitionPair(a.timestamp, ids[static_cast<size_t>(a.i)],
-                              ids[static_cast<size_t>(a.j)], isolate,
+    sim.SchedulePartitionPair(a.timestamp, ids[a.i], ids[a.j], isolate,
                               control_from);
   }
 }
@@ -32,9 +31,8 @@ inline void ApplyQuorumChaosFinalHeal(
     NodeID control_from, const std::set<std::pair<int, int>>& final_cut,
     TTime heal_time) {
   for (const auto& edge : final_cut) {
-    sim.SchedulePartitionPair(heal_time, ids[static_cast<size_t>(edge.first)],
-                              ids[static_cast<size_t>(edge.second)], false,
-                              control_from);
+    sim.SchedulePartitionPair(heal_time, ids[edge.first], ids[edge.second],
+                              false, control_from);
   }
 }
 
@@ -61,8 +59,7 @@ inline MonkeyClientWorkloadSchedule ScheduleMonkeySetBurst(
         distsysenv::metrics::ScheduledClientOp{.at = t, .command = cmd});
 
     sim.ScheduleLocalMessage(
-        t, ids[static_cast<size_t>(core_pick)],
-        ids[static_cast<size_t>(core_pick)],
+        t, ids[core_pick], ids[core_pick],
         Message::FromDescription("client_command", cmd.Serialize()));
     ++seq;
   }

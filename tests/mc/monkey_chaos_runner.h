@@ -48,7 +48,7 @@ inline MonkeyChaosRunOutcome RunMonkeyChaosQuorumCoreScenario(
 
   WireRaftCluster(sim, ids, 1.0f);
 
-  std::vector<bool> is_core(static_cast<size_t>(kNodes), false);
+  std::vector<bool> is_core(kNodes, false);
   is_core[0] = true;
   is_core[1] = true;
   is_core[2] = true;

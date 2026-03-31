@@ -51,7 +51,7 @@ inline QuorumPreservingChaosSchedule::QuorumPreservingChaosSchedule(
     bool placed = false;
     for (int attempt = 0; attempt < kMaxPickAttempts && !placed; ++attempt) {
       if (want_heal) {
-        const int which = rng.uniform<int>(0, static_cast<int>(cut.size()) - 1);
+        const int which = rng.uniform<int>(0, cut.size() - 1);
 
         auto it = cut.begin();
 
@@ -82,12 +82,11 @@ inline QuorumPreservingChaosSchedule::QuorumPreservingChaosSchedule(
         ++j;
       }
 
-      if (static_cast<size_t>(i) >= is_core.size() ||
-          static_cast<size_t>(j) >= is_core.size()) {
+      if (std::max(i, j) >= is_core.size()) {
         continue;
       }
 
-      if (is_core[static_cast<size_t>(i)] && is_core[static_cast<size_t>(j)]) {
+      if (is_core[i] && is_core[j]) {
         continue;
       }
 
@@ -114,12 +113,15 @@ inline QuorumPreservingChaosSchedule::QuorumPreservingChaosSchedule(
     if (a.timestamp != b.timestamp) {
       return a.timestamp < b.timestamp;
     }
+
     if (a.kind != b.kind) {
-      return static_cast<int>(a.kind) < static_cast<int>(b.kind);
+      return a.kind < b.kind;
     }
+
     if (a.i != b.i) {
       return a.i < b.i;
     }
+
     return a.j < b.j;
   };
 
@@ -143,7 +145,7 @@ inline QuorumPreservingChaosSchedule::QuorumPreservingChaosSchedule(
 inline std::vector<TTime> RandomClientTimes(Random& rng, int count, TTime t_min,
                                             TTime t_max) {
   std::vector<TTime> times;
-  times.reserve(static_cast<size_t>(count));
+  times.reserve(count);
 
   for (int i = 0; i < count; ++i) {
     times.push_back(rng.uniform<TTime>(t_min, t_max));
