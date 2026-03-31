@@ -21,6 +21,35 @@ inline Network::Config NetZeroDelay(uint64_t seed) {
   return Network::Config{.behavior = b, .random_seed = RandomSeed{seed}};
 }
 
+inline Network::Config NetUniformMessageDelay(uint64_t seed, TTime min_delay,
+                                              TTime max_delay) {
+  NetworkSettings b{
+      .drop_prob = 0.0f,
+      .min_delay = min_delay,
+      .max_delay = max_delay,
+  };
+
+  return Network::Config{.behavior = b, .random_seed = RandomSeed{seed}};
+}
+
+inline Network::Config NetFixedMessageDelay(uint64_t seed, TTime delay) {
+  return NetUniformMessageDelay(seed, delay, delay);
+}
+
+inline Network::Config NetJitterLan(uint64_t seed) {
+  return NetUniformMessageDelay(seed, 1.5f, 14.0f);
+}
+
+inline Network::Config NetUnstableLan(uint64_t seed) {
+  NetworkSettings b{
+      .drop_prob = 0.03f,
+      .min_delay = 1.5f,
+      .max_delay = 14.0f,
+  };
+
+  return Network::Config{.behavior = b, .random_seed = RandomSeed{seed}};
+}
+
 inline void WireRaftCluster(SimulationScenario& sim,
                             const std::vector<NodeID>& ids, TTime t0) {
   for (size_t i = 0; i < ids.size(); ++i) {

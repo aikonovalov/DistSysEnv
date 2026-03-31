@@ -145,8 +145,13 @@ void HybridRaftNode::ResetElectionTimer(SimulationContext& ctx) {
     election_rng_.emplace(ctx.GetOwnID().GetHash());
   }
 
+  const TTime spread =
+      static_cast<TTime>(GetIndexVal(ctx.GetOwnID().index())) * 40.0f;
   const TTime duration =
-      election_rng_->uniform(kELECTION_TIMEOUT_MIN, kELECTION_TIMEOUT_MAX);
+      election_rng_->uniform(kELECTION_TIMEOUT_MIN, kELECTION_TIMEOUT_MAX) +
+      election_rng_->uniform(TTime{0},
+                             kELECTION_TIMEOUT_MAX - kELECTION_TIMEOUT_MIN) +
+      spread;
 
   ctx.SetTimer("election", duration);
 }

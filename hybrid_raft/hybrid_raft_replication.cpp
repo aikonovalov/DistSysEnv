@@ -129,8 +129,8 @@ void HybridRaftNode::HandleAppendEntries(NodeID from, const Message& msg,
 
 void HybridRaftNode::SendAppendEntries(NodeID peer, SimulationContext& ctx) {
   const TIndex max_next = GetLastLogIndex() + 1;
-  next_index_[peer] = std::clamp(next_index_[peer], static_cast<TIndex>(0),
-                                 max_next);
+  next_index_[peer] =
+      std::clamp(next_index_[peer], static_cast<TIndex>(0), max_next);
 
   const TIndex prev_index = next_index_[peer] - 1;
 
