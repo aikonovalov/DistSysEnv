@@ -22,9 +22,9 @@ bool RaftNode::ClientCommandsMatch(const TCommand& scheduled,
 
 void RaftNode::RequeueAllInflightClientRedirectsToPending() {
   while (!in_flight_redirected_commands_.empty()) {
-    pending_client_commands_.push_front(std::move(
-        in_flight_redirected_commands_.back().command));
-    
+    pending_client_commands_.push_front(
+        std::move(in_flight_redirected_commands_.back().command));
+
     in_flight_redirected_commands_.pop_back();
   }
 }
@@ -73,8 +73,8 @@ void RaftNode::ForwardCommandToLeader(const TCommand& command,
   const NodeID target_leader = *leader_id_;
   client_redirect::RequestPayload payload{.reply_to = ctx.GetOwnID(),
                                           .command = command};
-  in_flight_redirected_commands_.push_back(
-      InFlightClientRedirect{.command = command, .sent_to_leader = target_leader});
+  in_flight_redirected_commands_.push_back(InFlightClientRedirect{
+      .command = command, .sent_to_leader = target_leader});
   ctx.SendMessage(target_leader,
                   Message::FromDescription("client_command_redirected",
                                            payload.Serialize()));
@@ -176,7 +176,7 @@ void RaftNode::HandleClientCommandRedirectedResponse(NodeID from,
 
   in_flight_redirected_commands_.erase(it);
   ctx.SendLocal(Message::FromDescription("client_command_response",
-                                       resp_payload.Serialize()));
+                                         resp_payload.Serialize()));
 }
 
 void RaftNode::DrainPendingClientResponses(SimulationContext& ctx,

@@ -38,7 +38,8 @@ inline constexpr MonkeyChaosTimeline kDefaultMonkeyChaosTimeline{};
 
 inline constexpr TTime kDefaultMonkeyChaosRunBeyondVerify = 80000.0f;
 inline constexpr TTime kDefaultMonkeyChaosRunUntil =
-    kDefaultMonkeyChaosTimeline.verify_get_time + kDefaultMonkeyChaosRunBeyondVerify;
+    kDefaultMonkeyChaosTimeline.verify_get_time +
+    kDefaultMonkeyChaosRunBeyondVerify;
 
 struct MonkeyChaosRunOutcome {
   metrics::RaftMcMetricsReport metrics;

@@ -30,7 +30,7 @@ TEST_CASE("Raft monkey chaos: quorum core stays connected", "[raft][mc]") {
   const auto& report = outcome.metrics;
   REQUIRE(report.MeanSetLatency().has_value());
   REQUIRE(report.MeanGetLatency().has_value());
-  
+
   REQUIRE(report.set_latencies.size() >= kMonkeyChaosSetOps - 5);
   REQUIRE(report.get_latencies.size() >= kMonkeyChaosGetOps - 5);
 
