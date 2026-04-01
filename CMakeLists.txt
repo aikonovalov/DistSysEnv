@@ -110,3 +110,9 @@ add_executable(raft_example
 )
 target_link_libraries(raft_example PRIVATE distsysenv_raft)
 target_include_directories(raft_example PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_executable(mc_seed_sweep
+  tools/mc_seed_sweep.cpp
+)
+target_link_libraries(mc_seed_sweep PRIVATE distsysenv_hybrid_raft)
+target_include_directories(mc_seed_sweep PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
