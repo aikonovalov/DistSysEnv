@@ -75,9 +75,8 @@ Example:
 
 ```bash
 ./mc_seed_sweep 1 50 both > sweep.csv
-python3 tools/summarize_mc_csv.py sweep.csv
 ```
 
 ## Coursework
 
-The term paper may live under `term_paper/` or `kursovaya/` depending on your checkout.
+The term paper live under `term_paper/`.

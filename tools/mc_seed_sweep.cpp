@@ -15,6 +15,7 @@ namespace {
 constexpr const char* kMcKey = "GOOOOOOL";
 
 constexpr TTime kStressRunUntil = 120000.0f;
+
 constexpr MonkeyChaosTimeline kStressTimeline{
     .chaos_t_min = 2500.0f,
     .chaos_t_max = 72000.0f,
@@ -44,10 +45,13 @@ void PrintCsvRow(std::ostream& os, std::string_view network, uint64_t seed,
                  const MonkeyChaosRunOutcome& hyb) {
   const auto& L = raft.metrics;
   const auto& R = hyb.metrics;
+
   os << network << ',' << seed << ',';
+
   os << L.append_entries_rejects << ',' << R.append_entries_rejects << ',';
   os << L.set_latencies.size() << ',' << R.set_latencies.size() << ',';
   os << L.get_latencies.size() << ',' << R.get_latencies.size() << ',';
+
   PrintOpt(os, L.MeanSetLatency());
   os << ',';
 
@@ -83,10 +87,13 @@ void RunPairAndPrint(std::ostream& os, std::string_view network,
   const MonkeyChaosRunOutcome classic =
       RunMonkeyChaosQuorumCoreScenario<RaftNode>(
           net, seed, kMcKey, kStressRunUntil, kStressTimeline);
+  
   const MonkeyChaosRunOutcome hybrid =
       RunMonkeyChaosQuorumCoreScenario<HybridRaftNode>(
           net, seed, kMcKey, kStressRunUntil, kStressTimeline);
+  
   PrintCsvRow(os, network, seed, classic, hybrid);
+  
   os.flush();
 }
 
@@ -109,7 +116,7 @@ NetMode ParseMode(const char* s) {
 int main(int argc, char** argv) {
   if (argc < 3) {
     std::cerr << "usage: " << argv[0]
-              << " <first_seed> <count> [jitter|loss|both]\n";
+              << " <first_seed> <count> [jitter|loss|both]" << std::endl;
 
     return 1;
   }
@@ -117,7 +124,7 @@ int main(int argc, char** argv) {
   const uint64_t first_seed = std::strtoull(argv[1], nullptr, 10);
   const int count = std::atoi(argv[2]);
   if (count <= 0) {
-    std::cerr << "count must be positive\n";
+    std::cerr << "count must be positive" << std::endl;
     return 1;
   }
 
